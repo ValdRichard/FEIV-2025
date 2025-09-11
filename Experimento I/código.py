@@ -49,7 +49,7 @@ serie3 = np.array([
 def f(beta, x):
     m = beta[0]
     return m * x
-def analisis(serie=1):
+def analisis(serie=1, con_residuos=True):
     modelo = Model(f)
 
     # beta0 inicial por serie
@@ -147,22 +147,45 @@ def analisis(serie=1):
         d_em_dR = -4.0 * m / (Rmean**3)
         errem = np.sqrt((d_em_dm * sm)**2 + (d_em_dR * sRmean)**2)
 
-    # --- Gráfico ---
-    plt.errorbar(x, y, xerr=errx, yerr=erry, fmt='o', ecolor="gray", capsize=3, label="Datos")
-    sort_idx = np.argsort(x)
-    xs = x[sort_idx]
-    plt.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    # --- Gráficos ---
+    if con_residuos:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8), sharex=True,
+                                       gridspec_kw={'height_ratios': [3, 1]})
 
-    textstr = (
-        f"R² = {r2:.4f}\n"
-        f"χ²_red = {chi2_red:.3f}"
-    )
-    plt.gca().text(0.3, 0.98, textstr, transform=plt.gca().transAxes,
-                   fontsize=10, verticalalignment='top',
-                   bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
-    plt.legend()
+        # Ajuste principal
+        ax1.errorbar(x, y, xerr=errx, yerr=erry, fmt='o', ecolor="gray",
+                     capsize=3, label="Datos")
+        sort_idx = np.argsort(x)
+        xs = x[sort_idx]
+        ax1.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
+        ax1.set_ylabel(ylabel)
+
+        textstr = f"R² = {r2:.4f}\nχ²_red = {chi2_red:.3f}"
+        ax1.text(0.3, 0.98, textstr, transform=ax1.transAxes,
+                 fontsize=10, verticalalignment='top',
+                 bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+        ax1.legend()
+
+        # Gráfico de residuos
+        residuos = y - y_pred
+        ax2.errorbar(x, residuos, yerr=erry, fmt='o', ecolor="gray", capsize=3)
+        ax2.axhline(0, color='r', linestyle='--')
+        ax2.set_xlabel(xlabel)
+        ax2.set_ylabel("Residuos")
+    else:
+        plt.errorbar(x, y, xerr=errx, yerr=erry, fmt='o', ecolor="gray",
+                     capsize=3, label="Datos")
+        sort_idx = np.argsort(x)
+        xs = x[sort_idx]
+        plt.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        textstr = f"R² = {r2:.4f}\nχ²_red = {chi2_red:.3f}"
+        plt.gca().text(0.3, 0.98, textstr, transform=plt.gca().transAxes,
+                       fontsize=10, verticalalignment='top',
+                       bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+        plt.legend()
+
     plt.tight_layout()
     plt.show()
 
@@ -172,10 +195,12 @@ def analisis(serie=1):
     print(f"R² = {r2:.6f}")
     print(f"χ² reducido = {chi2_red:.4f} (chi2 = {chi2:.3f}, dof = {dof})")
 
-    return {"m": m, "sm": sm, "em": em, "serrem": errem, "r2": r2, "chi2_red": chi2_red}
+    return {"m": m, "sm": sm, "em": em, "serrem": errem,
+            "r2": r2, "chi2_red": chi2_red}
+
 
 # Ejecución de ejemplo:
-res1 = analisis(serie=1)
-res2 = analisis(serie=2)
-res3 = analisis(serie=3)
+res1 = analisis(serie=1, con_residuos=True)
+res2 = analisis(serie=2, con_residuos=True)  
+res2 = analisis(serie=3, con_residuos=True)  
 

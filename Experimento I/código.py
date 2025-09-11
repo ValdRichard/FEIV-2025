@@ -9,8 +9,6 @@ mu0 = 4 * np.pi * 1e-7       # Permeabilidad magnética
 a = 0.15                     # Radio de las bobinas (m)
 cteB = (4/5)**(3/2) * mu0 * n / a
 
-
-import numpy as np
 # Orden de las columnas
 # I - V -R
 # Serie 1

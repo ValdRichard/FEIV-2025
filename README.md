@@ -6,7 +6,7 @@
 ## Presentación
 Materia obligatoria de segundo año de la carrera de Licenciatura en Física.  
 
-{\small\itshape Física Experimental IV 2025, Departamento de Física, Fac. de Cs. Exactas}
+Física Experimental IV 2025, Departamento de Física, Fac. de Cs. Exactas
 
 ---
 

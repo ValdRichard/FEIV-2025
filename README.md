@@ -11,7 +11,7 @@ Física Experimental IV 2025, Departamento de Física, Fac. de Cs. Exactas
 ---
 
 ## Integrantes del grupo
-- Valdivia, Ricardo  
-- Muro Díaz, Alejo  
-- Vignau, Juan Ignacio  
-- Ramírez, Joaquín  
+- Valdivia, Ricardo.
+- Muro Díaz, Alejo.
+- Vignau, Juan Ignacio.
+- Ramírez, Joaquín.

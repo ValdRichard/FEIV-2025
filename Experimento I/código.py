@@ -160,7 +160,11 @@ def analisis(serie=1, con_residuos=True):
         ax1.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
         ax1.set_ylabel(ylabel)
 
-        textstr = f"R² = {r2:.4f}\nχ²_red = {chi2_red:.3f}"
+        textstr = (
+            f"Función: y = m·x\n"
+            f"m = ({m:.3e} ± {sm:.1e})\n"
+            f"R² = {r2:.4f}\n"
+            f"χ²_red = {chi2_red:.3f}")
         ax1.text(0.3, 0.98, textstr, transform=ax1.transAxes,
                  fontsize=10, verticalalignment='top',
                  bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))

@@ -44,21 +44,18 @@ serie3 = np.array([
     [1.488000, 180.000000, 0.039500],
 ])
 
-
-# Modelo lineal y función auxiliar
-def f(beta, x):
+# Modelos lineales
+def f0(beta, x):
     m = beta[0]
     return m * x
-def analisis(serie=1, con_residuos=True):
-    modelo = Model(f)
 
-    # beta0 inicial por serie
-    if serie == 3:
-        beta0 = [1e8]
-    else:
-        beta0 = [1.0]
+def f1(beta, x):
+    m, b = beta
+    return m * x + b
 
-    # Selección de datos según la serie
+
+def analisis_comparado(serie=1, con_residuos=True):
+    # Selección de datos
     if serie == 1:
         datos = serie1
     elif serie == 2:
@@ -71,24 +68,20 @@ def analisis(serie=1, con_residuos=True):
     I = datos[:, 0]
     V = datos[:, 1]
     R = datos[:, 2]
-
     N = len(V)
-    if N == 0:
-        raise ValueError("No hay datos para la serie solicitada.")
 
-    # === ERRORES ===
+    # Errores
     errI = 0.03 * I + 0.003
     errV = 0.005 * V + 100e-3
-    errR = np.full_like(R, 0.003)   # error fijo de 3 mm (0.003 m)
+    errR = np.full_like(R, 0.003)
 
-    # Campo magnético (B) a partir de la corriente
     B = cteB * I
 
-    # --- selecciono x,y según serie ---
+    # Variables según serie
     if serie == 1:
         x = 1.0 / (B**2)
         y = R**2
-        errx = (2 * errI / I) * x
+        errx = (2 * cteB * errI) / (B**3)
         erry = 2 * R * errR
         xlabel, ylabel = "1/B² (T⁻²)", "R² (m²)"
     elif serie == 2:
@@ -104,107 +97,86 @@ def analisis(serie=1, con_residuos=True):
         erry = errV
         xlabel, ylabel = "B² (T²)", "V (V)"
 
-    # --- Ajuste ODR ---
-    data = RealData(x, y, sx=errx, sy=erry)
-    odr = ODR(data, modelo, beta0=beta0)
-    out = odr.run()
+    # --- Ajustes ---
+    # Sin ordenada
+    modelo0 = Model(f0)
+    odr0 = ODR(RealData(x, y, sx=errx, sy=erry), modelo0, beta0=[1.0])
+    out0 = odr0.run()
+    m0, sm0 = out0.beta[0], out0.sd_beta[0]
+    y_pred0 = f0(out0.beta, x)
 
-    m = float(out.beta[0])
-    sm = float(out.sd_beta[0])
+    # Con ordenada
+    modelo1 = Model(f1)
+    odr1 = ODR(RealData(x, y, sx=errx, sy=erry), modelo1, beta0=[1.0, 0.0])
+    out1 = odr1.run()
+    m1, b1 = out1.beta
+    sm1, sb1 = out1.sd_beta
+    y_pred1 = f1(out1.beta, x)
 
-    # predicción y residuos
-    y_pred = f([m], x)
-    ss_res = np.sum((y - y_pred)**2)
-    ss_tot = np.sum((y - np.mean(y))**2)
-    r2 = 1 - ss_res/ss_tot if ss_tot != 0 else np.nan
+    # Estadísticos
+    def stats(y, y_pred, erry, p):
+        ss_res = np.sum((y - y_pred)**2)
+        ss_tot = np.sum((y - np.mean(y))**2)
+        r2 = 1 - ss_res/ss_tot if ss_tot != 0 else np.nan
+        chi2 = np.sum(((y - y_pred) / erry)**2)
+        dof = max(1, N - p)
+        return r2, chi2/dof, chi2, dof
 
-    chi2 = np.sum(((y - y_pred) / erry)**2)
-    dof = max(1, N - len(out.beta))
-    chi2_red = chi2 / dof
+    r2_0, chi2red_0, chi2_0, dof0 = stats(y, y_pred0, erry, 1)
+    r2_1, chi2red_1, chi2_1, dof1 = stats(y, y_pred1, erry, 2)
 
-    # --- Cálculo de e/m ---
-    sVmean = errV.mean() / np.sqrt(N)
-    sImean = errI.mean() / np.sqrt(N)
-    sRmean = errR.mean() / np.sqrt(N)
-
-    if serie == 1:
-        Vmean = V.mean()
-        em = 2.0 * Vmean / m
-        d_em_dm = -2.0 * Vmean / (m**2)
-        d_em_dV = 2.0 / m
-        errem = np.sqrt((d_em_dm * sm)**2 + (d_em_dV * sVmean)**2)
-    elif serie == 2:
-        Imean = I.mean()
-        Bmean = cteB * Imean
-        em = 2.0 / (m * (Bmean**2))
-        d_em_dm = -2.0 / (m**2 * Bmean**2)
-        d_em_dI = -4.0 / (m * (cteB**2) * (Imean**3))
-        errem = np.sqrt((d_em_dm * sm)**2 + (d_em_dI * sImean)**2)
-    elif serie == 3:
-        Rmean = R.mean()
-        em = 2.0 * m / (Rmean**2)
-        d_em_dm = 2.0 / (Rmean**2)
-        d_em_dR = -4.0 * m / (Rmean**3)
-        errem = np.sqrt((d_em_dm * sm)**2 + (d_em_dR * sRmean)**2)
-
-    # --- Gráficos ---
+    # --- Gráfico con residuos ---
     if con_residuos:
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8), sharex=True,
-                                       gridspec_kw={'height_ratios': [3, 1]})
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 9), sharex=True,
+                                       gridspec_kw={"height_ratios": [3, 1]})
 
-        # Ajuste principal
-        ax1.errorbar(x, y, xerr=errx, yerr=erry, fmt='o', ecolor="gray",
-                     capsize=3, label="Datos")
-        sort_idx = np.argsort(x)
-        xs = x[sort_idx]
-        ax1.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
+        # Datos + ajustes
+        ax1.errorbar(x, y, xerr=errx, yerr=erry, fmt='o',
+                     ecolor="gray", capsize=3, label="Datos")
+        xs = np.linspace(x.min(), x.max(), 200)
+        ax1.plot(xs, f0([m0], xs), "r-", 
+                 label=(f"Sin ordenada: m={m0:.3e}\n"
+                        f"R²={r2_0:.4f}, χ²_red={chi2red_0:.3f}"))
+        ax1.plot(xs, f1([m1, b1], xs), "b--", 
+                 label=(f"Con ordenada: m={m1:.3e}, b={b1:.2e}\n"
+                        f"R²={r2_1:.4f}, χ²_red={chi2red_1:.3f}"))
         ax1.set_ylabel(ylabel)
+        ax1.legend(loc="best", fontsize=9)
 
-        textstr = (
-            f"Función: y = m·x\n"
-            f"m = ({m:.3e} ± {sm:.1e})\n"
-            f"R² = {r2:.4f}\n"
-            f"χ²_red = {chi2_red:.3f}")
-        ax1.text(0.3, 0.98, textstr, transform=ax1.transAxes,
-                 fontsize=10, verticalalignment='top',
-                 bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
-        ax1.legend()
-
-        # Gráfico de residuos
-        residuos = y - y_pred
-        ax2.errorbar(x, residuos, yerr=erry, fmt='o', ecolor="gray", capsize=3)
-        ax2.axhline(0, color='r', linestyle='--')
+        # Residuos en mismo gráfico
+        resid0 = y - y_pred0
+        resid1 = y - y_pred1
+        ax2.errorbar(x, resid0, yerr=erry, fmt='o', color="red",
+                     ecolor="lightcoral", capsize=3, label="Residuos sin ordenada")
+        ax2.errorbar(x, resid1, yerr=erry, fmt='s', color="blue",
+                     ecolor="lightblue", capsize=3, label="Residuos con ordenada")
+        ax2.axhline(0, color='k', linestyle='--')
         ax2.set_xlabel(xlabel)
         ax2.set_ylabel("Residuos")
-    else:
-        plt.errorbar(x, y, xerr=errx, yerr=erry, fmt='o', ecolor="gray",
-                     capsize=3, label="Datos")
-        sort_idx = np.argsort(x)
-        xs = x[sort_idx]
-        plt.plot(xs, f([m], xs), "r-", label="Ajuste ODR")
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        textstr = f"R² = {r2:.4f}\nχ²_red = {chi2_red:.3f}"
-        plt.gca().text(0.3, 0.98, textstr, transform=plt.gca().transAxes,
-                       fontsize=10, verticalalignment='top',
-                       bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
-        plt.legend()
+        ax2.legend(fontsize=9)
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
-    print(f"Serie {serie}")
-    print(f"Pendiente m = {m:.6e} ± {sm:.2e}")
-    print(f"e/m = {em:.6e} ± {errem:.2e} C/kg")
-    print(f"R² = {r2:.6f}")
-    print(f"χ² reducido = {chi2_red:.4f} (chi2 = {chi2:.3f}, dof = {dof})")
+    # --- Resultados ---
+    print(f"=== Serie {serie} ===")
+    print("Modelo sin ordenada:")
+    print(f"  m = {m0:.6e} ± {sm0:.2e}")
+    print(f"  R² = {r2_0:.4f}, χ²_red = {chi2red_0:.3f}")
 
-    return {"m": m, "sm": sm, "em": em, "serrem": errem,
-            "r2": r2, "chi2_red": chi2_red}
+    print("\nModelo con ordenada:")
+    print(f"  m = {m1:.6e} ± {sm1:.2e}, b = {b1:.3e} ± {sb1:.2e}")
+    print(f"  R² = {r2_1:.4f}, χ²_red = {chi2red_1:.3f}")
+
+    return {
+        "sin_ordenada": {"m": m0, "sm": sm0, "r2": r2_0, "chi2_red": chi2red_0},
+        "con_ordenada": {"m": m1, "sm": sm1, "b": b1, "sb": sb1, "r2": r2_1, "chi2_red": chi2red_1}
+    }
 
 
-# Ejecución de ejemplo:
-res1 = analisis(serie=1, con_residuos=True)
-res2 = analisis(serie=2, con_residuos=True)  
-res2 = analisis(serie=3, con_residuos=True)  
 
+
+# Ejecución de ejemplo
+res1 = analisis_comparado(serie=1, con_residuos=True)
+res2 = analisis_comparado(serie=2, con_residuos=True)
+res3 = analisis_comparado(serie=3, con_residuos=True)

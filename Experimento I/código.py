@@ -54,7 +54,15 @@ def f1(beta, x):
     return m * x + b
 
 
-def analisis_comparado(serie=1, con_residuos=True):
+def fmt_pm(value, error, sig=3):
+    """Formatea como 'value ± error' en notación científica con `sig` decimales en la mantisa."""
+    # Si alguno es NaN o infinito lo dejamos con formato estándar
+    if not np.isfinite(value) or not np.isfinite(error):
+        return f"{value:.{sig}e} ± {error:.{sig}e}"
+    return f"{value:.{sig}e} ± {error:.{sig}e}"
+
+
+def analisis_comparado(serie=1, con_residuos=True, sig=3):
     # Selección de datos
     if serie == 1:
         datos = serie1
@@ -134,11 +142,17 @@ def analisis_comparado(serie=1, con_residuos=True):
         ax1.errorbar(x, y, xerr=errx, yerr=erry, fmt='o',
                      ecolor="gray", capsize=3, label="Datos")
         xs = np.linspace(x.min(), x.max(), 200)
-        ax1.plot(xs, f0([m0], xs), "r-", 
-                 label=(f"Sin ordenada: m={m0:.3e}\n"
+
+        # Formateo simple "valor ± error"
+        m0_str = fmt_pm(m0, sm0, sig=sig)
+        m1_str = fmt_pm(m1, sm1, sig=sig)
+        b1_str = fmt_pm(b1, sb1, sig=sig)
+
+        ax1.plot(xs, f0([m0], xs), "r-",
+                 label=(f"Sin ordenada: m={m0_str}\n"
                         f"R²={r2_0:.4f}, χ²_red={chi2red_0:.3f}"))
-        ax1.plot(xs, f1([m1, b1], xs), "b--", 
-                 label=(f"Con ordenada: m={m1:.3e}, b={b1:.2e}\n"
+        ax1.plot(xs, f1([m1, b1], xs), "b--",
+                 label=(f"Con ordenada: m={m1_str}, b={b1_str}\n"
                         f"R²={r2_1:.4f}, χ²_red={chi2red_1:.3f}"))
         ax1.set_ylabel(ylabel)
         ax1.legend(loc="best", fontsize=9)
@@ -161,20 +175,18 @@ def analisis_comparado(serie=1, con_residuos=True):
     # --- Resultados ---
     print(f"=== Serie {serie} ===")
     print("Modelo sin ordenada:")
-    print(f"  m = {m0:.6e} ± {sm0:.2e}")
+    print(f"  m = {fmt_pm(m0, sm0, sig=sig)}")
     print(f"  R² = {r2_0:.4f}, χ²_red = {chi2red_0:.3f}")
 
     print("\nModelo con ordenada:")
-    print(f"  m = {m1:.6e} ± {sm1:.2e}, b = {b1:.3e} ± {sb1:.2e}")
+    print(f"  m = {fmt_pm(m1, sm1, sig=sig)}")
+    print(f"  b = {fmt_pm(b1, sb1, sig=sig)}")
     print(f"  R² = {r2_1:.4f}, χ²_red = {chi2red_1:.3f}")
 
     return {
         "sin_ordenada": {"m": m0, "sm": sm0, "r2": r2_0, "chi2_red": chi2red_0},
         "con_ordenada": {"m": m1, "sm": sm1, "b": b1, "sb": sb1, "r2": r2_1, "chi2_red": chi2red_1}
     }
-
-
-
 
 # Ejecución de ejemplo
 res1 = analisis_comparado(serie=1, con_residuos=True)

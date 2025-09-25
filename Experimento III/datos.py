@@ -29,35 +29,42 @@ def fit_lineal(Vs, f, scale=1e14):
     odr = ODR(data, modelo, beta0=beta0)
     out = odr.run()
 
+    # Parámetros ajustados
     m_scaled, b = out.beta
     sm_scaled, sb = out.sd_beta
-
     m, sm = m_scaled / scale, sm_scaled / scale
 
-    # Chi² reducido
-    chi2_red = out.res_var  # varianza residual reducida
+    # --- Cálculo de métricas de calidad del ajuste ---
 
-    # R²
-    y_mean = np.mean(Vs)
-    ss_tot = np.sum((Vs - y_mean) ** 2)
-    ss_res = np.sum(out.delta ** 2)
+    # Predicción del modelo con parámetros ajustados
+    y_pred = f_lineal(out.beta, f_scaled)
+
+    # Chi² reducido
+    chi2 = np.sum(((Vs - y_pred) / errV) ** 2)
+    dof = len(Vs) - len(out.beta)  # grados de libertad = n - n_parámetros
+    chi2_red = chi2 / dof if dof > 0 else np.nan
+
+    # Coeficiente de determinación R²
+    ss_res = np.sum((Vs - y_pred) ** 2)
+    ss_tot = np.sum((Vs - np.mean(Vs)) ** 2)
     r2 = 1 - ss_res / ss_tot
 
     return m, sm, b, sb, chi2_red, r2
 
 
+
 def analisis_tres_series(f, sin_filtro, con_filtro, pasco, scale=1e14, label="", nombres_colores=None):
     datasets = {
         "Datos - sin filtro": sin_filtro,
-        "Datos - con filtro": con_filtro,
-        "Datos - con filtro PASCO": pasco
+        'Datos - con filtro "a"': con_filtro,
+        'Datos - con filtro "b"': pasco
     }
 
     colores = ["tab:blue", "tab:orange", "tab:green"]
     marcadores = ["D", "s", "v"]       # círculo, cuadrado, diamante
     tamanios = [6, 6, 6]               # tamaños ligeramente distintos
 
-    plt.figure(figsize=(7, 6))
+    plt.figure(figsize=(9, 6))
 
     resultados = {}
     funcion_label_agregada = False
@@ -71,38 +78,45 @@ def analisis_tres_series(f, sin_filtro, con_filtro, pasco, scale=1e14, label="",
             "chi2_red": chi2_red,
             "R2": r2
         }
-
+        if not funcion_label_agregada:
+            label_ajuste = f"y = m·x + b"
+            funcion_label_agregada = True
+        else:
+            label_ajuste = None
         # Dibujar puntos
         errV = 0.03 * np.array(Vs) + 0.01
         errF = np.full_like(f, 1e8)
         plt.errorbar(f, Vs, yerr=errV, xerr=errF,
                      fmt=marker, markersize=msize,
                      ecolor="gray", capsize=3,
-                     label=f"{nombre}", alpha=0.8, color=color)
+                     label=(f"{nombre} ajuste\n"
+                        f"m = ({m:.2e} ± {sm:.1e})\n"
+                        f"b = ({b:.2f} ± {sb:.2f})\n"
+                        f"χ²r = {chi2_red:.2f}, R² = {r2:.4f}" if label_ajuste is None
+                        else f"{label_ajuste}\n{nombre} ajuste\nm = {m:.2e}, b = {b:.2f}\nχ²r = {chi2_red:.2f}, R² = {r2:.3f}")
+                     , alpha=0.8, color=color)
 
         # Dibujar ajuste
         f_fit = np.linspace(min(f), max(f), 200)
         Vs_fit = m * f_fit + b
 
-        if not funcion_label_agregada:
-            label_ajuste = f"y = m·f + b"
-            funcion_label_agregada = True
-        else:
-            label_ajuste = None
+        
 
-        plt.plot(f_fit, Vs_fit, "-", color=color,
-                 label=(f"{nombre} ajuste\n"
-                        f"m = {m:.2e}, b = {b:.2f}\n"
-                        f"χ²r = {chi2_red:.2f}, R² = {r2:.3f}" if label_ajuste is None
-                        else f"{label_ajuste}\n{nombre} ajuste\nm = {m:.2e}, b = {b:.2f}\nχ²r = {chi2_red:.2f}, R² = {r2:.3f}"))
+        plt.plot(f_fit, Vs_fit, "", color=color,
+                #  label=(f"{nombre} ajuste\n"
+                #         f"m = {m:.2e}, b = {b:.2f}\n"
+                #         f"χ²r = {chi2_red:.2f}, R² = {r2:.4f}" if label_ajuste is None
+                #         else f"{label_ajuste}\n{nombre} ajuste\nm = {m:.2e}, b = {b:.2f}\nχ²r = {chi2_red:.2f}, R² = {r2:.3f}")
+                         )
 
     # Decoración
-    titulo = f"Ajuste ODR: Voltaje vs Frecuencia {label}" if label else "Ajuste ODR: Voltaje vs Frecuencia"
-    plt.title(titulo, fontsize=14)
+    # titulo = f"Ajuste ODR: Voltaje vs Frecuencia {label}" if label else "Ajuste ODR: Voltaje vs Frecuencia"
+    # plt.title(titulo, fontsize=14)
+    plt.title('', fontsize=14)
     plt.xlabel("Frecuencia f (Hz)", fontsize=12)
     plt.ylabel("Voltaje Vs (V)", fontsize=12)
     plt.grid(True, alpha=0.3)
-    plt.legend(fontsize=9, loc="best")
+    plt.legend(fontsize=14, loc="best")
     plt.tight_layout()
     plt.show()
 
@@ -140,8 +154,8 @@ resultados = analisis_tres_series(frecuencias, sin_filtro, con_filtro, filtro_pa
 # =======================
 # Columnas: [Frecuencia, Sin filtro, Con filtro, Filtro PASCO]
 data_orden2 = np.array([
-    [8.20264E+14, 1.60, 1.76, 1.76],
-    [7.40858E+14, 1.25, 1.52, 1.52],
+    [8.20264E+14, 1.60, 1.60, 1.60],
+    [7.40858E+14, 1.25, 1.25, 1.25],
     [6.87858E+14, 0.99, 0.99, 0.99],
     [5.48996E+14, 0.99, 0.66, 0.37],
     [5.18672E+14, 0.86, 0.36, 0.33]
@@ -206,3 +220,32 @@ filtro_pasco_m2 = data_ordenm2[:, 3]
 # Llamada a la función para los tres datasets
 # =======================
 resultados_ordenm2 = analisis_tres_series(frecuencias_m2, sin_filtro_m2, con_filtro_m2, filtro_pasco_m2, label="Orden -2")
+
+
+
+def guardar_resultados_txt(resultados_dict, nombre_archivo="resultados.txt"):
+    """
+    Guarda los resultados de los ajustes en un archivo de texto.
+    
+    resultados_dict: dict con la estructura {label: {sublabel: {param: valor, ...}}}
+    """
+    with open(nombre_archivo, "w") as f:
+        for label, res_sub in resultados_dict.items():
+            f.write(f"===== {label} =====\n")
+            for sublabel, valores in res_sub.items():
+                f.write(f"{sublabel}:\n")
+                f.write(f"  m  = {valores['m']:.6e} ± {valores['sm']:.2e}\n")
+                f.write(f"  b  = {valores['b']:.6f} ± {valores['sb']:.6f}\n")
+                f.write(f"  x2r = {valores['chi2_red']:.4f}\n")
+                f.write(f"  r2   = {valores['R2']:.4f}\n")
+            f.write("\n")
+
+
+todos_los_resultados = {
+    "Orden 1": resultados,
+    "Orden 2": resultados_orden2,
+    "Orden -1": resultados_ordenm1,
+    "Orden -2": resultados_ordenm2
+}
+
+guardar_resultados_txt(todos_los_resultados, "resultados_todos.txt")

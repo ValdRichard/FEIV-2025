@@ -1,10 +1,19 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
+from scipy.odr import ODR, Model, RealData
 
-def leer_spe(path):
-    with open(path, "r") as f:
+def graficar(df):
+    plt.figure(figsize=(8,5))
+    plt.scatter(df["Canal"], df["Cuentas"], marker='.')
+    plt.xlabel("Canal")
+    plt.ylabel("Cuentas")
+    plt.title("Espectro calibrado")
+    plt.grid(alpha=0.3)
+    plt.show()
+
+def leer_spe(path, nombre):
+    with open(path + nombre, "r") as f:
         lines = [l.strip() for l in f]
 
     start = lines.index("$DATA:") + 10
@@ -16,51 +25,132 @@ def leer_spe(path):
         "Cuentas": counts
     })
     return df
-def calibrar_picos(df, energias_referencia):
-    # Detectar todos los picos
-    peaks, properties = find_peaks(df["Cuentas"], height=max(df["Cuentas"])*0.05, distance=20)
+
+
+def espectro(path, nombre):
+    df = leer_spe(path, nombre)
+    fondo = leer_spe(path, 'Fondo-17-9-4700.Spe')
+    df["Cuentas"] = df["Cuentas"] - fondo["Cuentas"]
+    return df
+
+
+
+# ==============================
+#  Definición de la Gaussiana
+# ==============================
+def funcion_gaussiana(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud
+    beta[1] = media
+    beta[2] = sigma
+    beta[3] = pendiente
+    beta[4] = ordenada
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4]
+
+
+# ==============================
+#  Ajuste con ODR
+# ==============================
+def ajustar_gaussiana_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True):
+    # Valores iniciales por defecto
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
     
-    # Obtener el canal central de cada pico (el máximo dentro de cada pico detectado)
-    canales_picos = []
-    for p in peaks:
-        # max del pico en su vecindad (ej. ±10 canales)
-        left = max(p-10, 0)
-        right = min(p+10, len(df)-1)
-        local_max = df["Cuentas"].iloc[left:right+1].idxmax()
-        canales_picos.append(local_max)
-
-    canales_picos = np.array(sorted(canales_picos))  # ordenar por canal
-    print("Picos detectados (canal central):", canales_picos)
+    # Manejo de errores si no se pasan
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)  # 1% del rango
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)  # 1% del rango
     
-    # Seleccionamos los dos picos más cercanos a donde esperamos los picos de referencia
-    # Por ejemplo, asumimos que el primero es el de rayos X (bajo canal) y el segundo el fotopico
-    canales_seleccionados = [canales_picos[0], canales_picos[-1]]
-
-    # Ajuste lineal
-    a, b = np.polyfit(canales_seleccionados, energias_referencia, 1)
-    df["Energia_keV"] = a * df["Canal"] + b
-
-    print(f"Calibración: E = {a:.4f} * canal + {b:.4f}")
-    print(f"Picos usados para calibrar: {canales_seleccionados}, energías: {energias_referencia}")
+    # Crear el modelo para ODR
+    modelo_gauss = Model(funcion_gaussiana)
     
-    return df, (a,b)
+    # Crear datos con errores
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    
+    # Configurar ODR
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    
+    # Ejecutar el ajuste
+    output = odr.run()
+    
+    # Extraer resultados
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    # Función ajustada
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana(parametros, x)
+    
+    # Mostrar gráfica
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.7, label='Datos', 
+                     color='blue', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Gaussiana ODR\n'
+                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'μ={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}'))
+        
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('Ajuste Gaussiano con ODR')
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
 
-
-def graficar(df):
-    plt.figure(figsize=(8,5))
-    plt.scatter(df["Energia_keV"], df["Cuentas"])
-    plt.xlabel("Energía [keV]")
-    plt.ylabel("Cuentas")
-    plt.title("Espectro calibrado")
-    plt.grid(alpha=0.3)
-    plt.show()
 
 # --- Ejemplo de uso ---
-ruta = "./Experimento IV/Datos/Cs137-cu.Spe"
-df = leer_spe(ruta)
+ruta = "./Experimento IV/Datos/"
+df = espectro(ruta, 'Cs137-Pb.Spe')
 
-# Energías conocidas de referencia (rayos X Cs ~32 keV, fotopico Cs-137 ~662 keV)
-energias_referencia = [32, 662]
+graficar(df[560:800])
+x_data = df["Canal"][560:800]
+x_err = np.ones_like(1/1024)
+y_data = df["Cuentas"][560:800]
+y_err = np.sqrt(y_data)
 
-df_cal, calib = calibrar_picos(df, energias_referencia)
-graficar(df_cal)
+# Ajuste
+parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
+    x_data, y_data, x_err, y_err, 
+    # beta[0] = amplitud
+    # beta[1] = media
+    # beta[2] = sigma
+    # beta[3] = pendiente
+    # beta[4] = ordenada
+    p0=[0,662,7,4,0]
+)
+
+print("Parámetros ajustados:", parametros)
+print("Errores estándar:", errores)
+
+# x_data = df["Canal"][10:60]
+# x_err = np.ones_like(1/1024)
+# y_data = df["Cuentas"][10:60]
+# y_err = np.sqrt(y_data)
+
+# # Ajuste
+# parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
+#     x_data, y_data, x_err, y_err, 
+#     # beta[0] = amplitud
+#     # beta[1] = media
+#     # beta[2] = sigma
+#     # beta[3] = pendiente
+#     # beta[4] = ordenada
+#     p0=[0,30,7,4,0]
+# )
+
+# print("Parámetros ajustados:", parametros)
+# print("Errores estándar:", errores)

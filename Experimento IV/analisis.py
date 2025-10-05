@@ -3,12 +3,62 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
 
-def graficar(df):
+def fit_lineal(x, y, err_x=None, err_y=None):
+    # Conversión a arrays
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+
+    # Manejo de errores
+    if err_x is None:
+        err_x = np.zeros_like(x)
+    elif np.isscalar(err_x):
+        err_x = np.full_like(x, err_x, dtype=float)
+
+    if err_y is None:
+        err_y = np.zeros_like(y)
+    elif np.isscalar(err_y):
+        err_y = np.full_like(y, err_y, dtype=float)
+
+    # Modelo lineal
+    def f_lineal(beta, x):
+        m, b = beta
+        return m * x + b
+
+    modelo = Model(f_lineal)
+    data = RealData(x, y, sx=err_x, sy=err_y)
+    beta0 = [1.0, 0.0]
+
+    odr = ODR(data, modelo, beta0=beta0)
+    out = odr.run()
+
+    # Parámetros ajustados
+    m, b = out.beta
+    sm, sb = out.sd_beta
+
+    # Predicción del modelo
+    y_pred = f_lineal(out.beta, x)
+
+    # Chi² reducido
+    chi2 = np.sum(((y - y_pred) / np.maximum(err_y, 1e-12)) ** 2)
+    dof = len(y) - len(out.beta)
+    chi2_red = chi2 / dof if dof > 0 else np.nan
+
+    # Coeficiente de determinación R²
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    r2 = 1 - ss_res / ss_tot
+
+    return m, sm, b, sb
+    # return m, sm, b, sb, chi2_red, r2
+
+
+
+
+def graficar(x, y, xlabel, ylabel):
     plt.figure(figsize=(8,5))
-    plt.scatter(df["Canal"], df["Cuentas"], marker='.')
-    plt.xlabel("Canal")
-    plt.ylabel("Cuentas")
-    plt.title("Espectro calibrado")
+    plt.scatter(x, y, marker='.')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.grid(alpha=0.3)
     plt.show()
 
@@ -34,10 +84,6 @@ def espectro(path, nombre):
     return df
 
 
-
-# ==============================
-#  Definición de la Gaussiana
-# ==============================
 def funcion_gaussiana(beta, x):
     """
     Función gaussiana para ODR.
@@ -50,9 +96,6 @@ def funcion_gaussiana(beta, x):
     return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4]
 
 
-# ==============================
-#  Ajuste con ODR
-# ==============================
 def ajustar_gaussiana_odr(x_data, y_data, 
                           x_err=None, y_err=None, 
                           p0=None, mostrar_grafica=True):
@@ -90,8 +133,8 @@ def ajustar_gaussiana_odr(x_data, y_data,
     if mostrar_grafica:
         plt.figure(figsize=(10,6))
         plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
-                     fmt='o', alpha=0.7, label='Datos', 
-                     color='blue', capsize=3)
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
         
         x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
         y_fit = gaussiana_ajustada(x_fit)
@@ -111,46 +154,18 @@ def ajustar_gaussiana_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
+def calibrar(canal, sigma_canal, m, b, sm, sb):
+    
+    canal = np.array(canal, dtype=float)
+    E = m * canal + b
 
-# --- Ejemplo de uso ---
-ruta = "./Experimento IV/Datos/"
-df = espectro(ruta, 'Cs137-Pb.Spe')
+    if sigma_canal is None:
+        sigma_canal = np.zeros_like(canal, dtype=float)
+    else:
+        if np.isscalar(sigma_canal):
+            sigma_canal = np.full_like(canal, float(sigma_canal))
 
-graficar(df[560:800])
-x_data = df["Canal"][560:800]
-x_err = np.ones_like(1/1024)
-y_data = df["Cuentas"][560:800]
-y_err = np.sqrt(y_data)
-
-# Ajuste
-parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-    x_data, y_data, x_err, y_err, 
-    # beta[0] = amplitud
-    # beta[1] = media
-    # beta[2] = sigma
-    # beta[3] = pendiente
-    # beta[4] = ordenada
-    p0=[0,662,7,4,0]
-)
-
-print("Parámetros ajustados:", parametros)
-print("Errores estándar:", errores)
-
-# x_data = df["Canal"][10:60]
-# x_err = np.ones_like(1/1024)
-# y_data = df["Cuentas"][10:60]
-# y_err = np.sqrt(y_data)
-
-# # Ajuste
-# parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-#     x_data, y_data, x_err, y_err, 
-#     # beta[0] = amplitud
-#     # beta[1] = media
-#     # beta[2] = sigma
-#     # beta[3] = pendiente
-#     # beta[4] = ordenada
-#     p0=[0,30,7,4,0]
-# )
-
-# print("Parámetros ajustados:", parametros)
-# print("Errores estándar:", errores)
+    # Propagación: derivadas: dE/dm = canal, dE/db = 1, dE/dcanal = m
+    # Var(E) ≈ (canal^2 * Var(m)) + Var(b) + (m^2 * Var(canal))
+    sigma_E = np.sqrt((canal**2) * (sm**2) + (sb**2) + (m**2) * (sigma_canal**2))
+    return E, sigma_E

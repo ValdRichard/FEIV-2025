@@ -62,6 +62,33 @@ def graficar(x, y, xlabel, ylabel):
     plt.grid(alpha=0.3)
     plt.show()
 
+import matplotlib.pyplot as plt
+
+def graficar_con_error(x, y, xerr, yerr, xlabel, ylabel, titulo=None):
+    plt.figure(figsize=(8, 5))
+    
+    # Graficamos con barras de error
+    plt.errorbar(
+        x, y,
+        xerr=xerr, yerr=yerr,
+        fmt='o',                # formato del punto (o = círculo)
+        ecolor='gray',          # color de las barras de error
+        elinewidth=1,           # grosor de línea de error
+        capsize=3,              # tamaño de los "topes" en las barras
+        markersize=4,           # tamaño de los puntos
+        markeredgecolor='black',
+        markerfacecolor='blue',
+        alpha=0.8
+    )
+    
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if titulo:
+        plt.title(titulo)
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
 def leer_spe(path, nombre):
     with open(path + nombre, "r") as f:
         lines = [l.strip() for l in f]

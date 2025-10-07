@@ -1,5 +1,5 @@
 import numpy as np
-from analisis import espectro, ajustar_gaussiana_odr, fit_lineal, graficar, calibrar
+from analisis import espectro, ajustar_gaussiana_odr, fit_lineal, graficar, calibrar, graficar_con_error
 
 # --- Importamos datos del Plomo ---
 ruta = "./Experimento IV/Datos/"
@@ -49,4 +49,5 @@ m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
 errC = np.full(len(df["Canal"]), 1/1024, dtype=float)
 E, errE = calibrar(df["Canal"], errC, m, b, sm, sb)
 
-graficar(E, df["Cuentas"], 'Energia', 'Cuentas')
+# graficar(E, df["Cuentas"], 'Energia', 'Cuentas')
+graficar_con_error(E, df["Cuentas"], errE, errC, 'Energia', 'Cuentas')

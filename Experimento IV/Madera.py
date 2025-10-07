@@ -1,5 +1,5 @@
 import numpy as np
-from analisis import devolver_energia_cuentas, espectro, ajustar_gaussiana_odr, fit_lineal, graficar, calibrar, graficar_con_error
+from analisis import devolver_energia_cuentas, espectro
 
 # --- Importamos datos del Plomo ---
 ruta = "./Experimento IV/Datos/"
@@ -7,7 +7,7 @@ df = espectro(ruta, 'Cs137-madera.Spe')
 
 E, errE, errC, resultados = devolver_energia_cuentas(
     df,
-    corte1=(20, 70),
+    corte1=(4, 70),
     p0_1=[0, 35, 6, 3, 0],
     mostrarGrafica1=True,
     corte2=(540, 810),
@@ -16,4 +16,4 @@ E, errE, errC, resultados = devolver_energia_cuentas(
     mostrarGraficaFinal=True,
 )
 
-print(resultados)
+# print(resultados)

@@ -35,18 +35,18 @@ def fit_lineal(x, y, err_x=None, err_y=None):
     m, b = out.beta
     sm, sb = out.sd_beta
 
-    # Predicción del modelo
-    y_pred = f_lineal(out.beta, x)
+    # # Predicción del modelo
+    # y_pred = f_lineal(out.beta, x)
 
-    # Chi² reducido
-    chi2 = np.sum(((y - y_pred) / np.maximum(err_y, 1e-12)) ** 2)
-    dof = len(y) - len(out.beta)
-    chi2_red = chi2 / dof if dof > 0 else np.nan
+    # # Chi² reducido
+    # chi2 = np.sum(((y - y_pred) / np.maximum(err_y, 1e-12)) ** 2)
+    # dof = len(y) - len(out.beta)
+    # chi2_red = chi2 / dof if dof > 0 else np.nan
 
-    # Coeficiente de determinación R²
-    ss_res = np.sum((y - y_pred) ** 2)
-    ss_tot = np.sum((y - np.mean(y)) ** 2)
-    r2 = 1 - ss_res / ss_tot
+    # # Coeficiente de determinación R²
+    # ss_res = np.sum((y - y_pred) ** 2)
+    # ss_tot = np.sum((y - np.mean(y)) ** 2)
+    # r2 = 1 - ss_res / ss_tot
 
     return m, sm, b, sb
     # return m, sm, b, sb, chi2_red, r2
@@ -218,8 +218,8 @@ def devolver_energia_cuentas(
             x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica
         )
 
-        print("Parámetros ajustados:", parametros)
-        print("Errores estándar:", errores)
+        # print("Parámetros ajustados:", parametros)
+        # print("Errores estándar:", errores)
         return parametros, errores
 
     # --- Ajuste de los dos picos ---
@@ -227,21 +227,30 @@ def devolver_energia_cuentas(
     parametros2, errores2 = cortar_espectro(*corte2, p0_2, mostrarGrafica2)
 
     # --- Calibración ---
-    Energia = [33, 662]
-    errEnergia = [1, 1]
+    Energia = [32, 662]
+    errEnergia = [0.001, 0.001]
     canal = [parametros1[1], parametros2[1]]
     errCanal = [errores1[1], errores2[1]]
+    # Esto está mal, porque no sirve un ajuste de dos valores, lo haré a mano
+    # m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
 
-    m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
+    
+    # print(canal[1] - canal[0])
+    m =(662-32)/(canal[1] - canal[0])
+    b = -m * canal[0] + 32
+    sm = np.sqrt(errCanal[0]**2 + errCanal[1]**2) * ((662-32)/(canal[1] - canal[0])**2)
+    sb = np.sqrt((m * errCanal[0])**2 + (sm * canal[0])**2)
+    
 
-    errC = np.full(len(df["Canal"]), 1/1024, dtype=float)
-    E, errE = calibrar(df["Canal"], errC, m, b, sm, sb)
-
+    errorX = np.full(len(df["Canal"][:800]), 1/1024, dtype=float)
+    errCuentas = np.sqrt(df["Cuentas"][:800])
+    E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
+    # print(f"Errores en E: {errE}")
     if mostrarGraficaFinal:
-        graficar_con_error(E, df["Cuentas"], errE, errC, 'Energía (keV)', 'Cuentas')
+        graficar_con_error(E, df["Cuentas"][:800], errE, errCuentas, 'Energía (keV)', 'Cuentas')
 
     # Retornamos resultados
-    return E, errE, errC, {
+    return E, errE, errCuentas, {
         "pico1": {"parametros": parametros1, "errores": errores1},
         "pico2": {"parametros": parametros2, "errores": errores2},
         "ajuste_lineal": {"m": m, "sm": sm, "b": b, "sb": sb},

@@ -207,6 +207,12 @@ def devolver_energia_cuentas(
     p0_2=[0, 662, 7, 4, 0],
     mostrarGrafica2=True,
     mostrarGraficaFinal=True,
+    corteRetro = (70, 120),
+    p0_retro = [0, 320, 8, 4, 0],
+    corteCompton = (70, 120),
+    p0_compton = [0, 320, 8, 4, 0],
+    mostrarGraficoRetro = True, 
+    mostrarGraficoCompton = True, 
 ):
     def cortar_espectro(izquierda, derecha, p0, mostrarGrafica):
         x_data = df["Canal"][izquierda:derecha]
@@ -243,12 +249,15 @@ def devolver_energia_cuentas(
     
 
     errorX = np.full(len(df["Canal"][:800]), 1/1024, dtype=float)
+    Cuentas = df["Cuentas"][:800]
     errCuentas = np.sqrt(df["Cuentas"][:800])
     E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
     # print(f"Errores en E: {errE}")
     if mostrarGraficaFinal:
-        graficar_con_error(E, df["Cuentas"][:800], errE, errCuentas, 'Energía (keV)', 'Cuentas')
+        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía (keV)', 'Cuentas')
 
+    
+    parametros1, errores1 = cortar_espectro(*corteRetro, p0_retro, mostrarGraficaRetro)
     # Retornamos resultados
     return E, errE, errCuentas, {
         "pico1": {"parametros": parametros1, "errores": errores1},

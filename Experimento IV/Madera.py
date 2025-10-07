@@ -14,6 +14,8 @@ E, errE, errC, resultados = devolver_energia_cuentas(
     p0_2=[0, 660, 8, 4, 0],
     mostrarGrafica2=True,
     mostrarGraficaFinal=True,
+    corteRetro = (70, 120),
+    p0_retro = [0, 320, 8, 4, 0],
+    corteCompton = (70, 120),
+    p0_compton = [0, 320, 8, 4, 0]
 )
-
-# print(resultados)

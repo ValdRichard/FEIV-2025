@@ -51,9 +51,6 @@ def fit_lineal(x, y, err_x=None, err_y=None):
     return m, sm, b, sb
     # return m, sm, b, sb, chi2_red, r2
 
-
-
-
 def graficar(x, y, xlabel, ylabel):
     plt.figure(figsize=(8,5))
     plt.scatter(x, y, marker='.')
@@ -61,8 +58,6 @@ def graficar(x, y, xlabel, ylabel):
     plt.ylabel(ylabel)
     plt.grid(alpha=0.3)
     plt.show()
-
-import matplotlib.pyplot as plt
 
 def graficar_con_error(x, y, xerr, yerr, xlabel, ylabel, titulo=None):
     plt.figure(figsize=(8, 5))
@@ -197,6 +192,12 @@ def calibrar(canal, sigma_canal, m, b, sm, sb):
     sigma_E = np.sqrt((canal**2) * (sm**2) + (sb**2) + (m**2) * (sigma_canal**2))
     return E, sigma_E
 
+def cortar_datos(izquierda, derecha, x, y, x_err, y_err):
+    x_data = x[izquierda:derecha]
+    y_data = y[izquierda:derecha]
+    x_err = x_err[izquierda:derecha]
+    y_err = y_err[izquierda:derecha]
+    return x_data, y_data, x_err, y_err
 
 def devolver_energia_cuentas(
     df,
@@ -211,8 +212,8 @@ def devolver_energia_cuentas(
     p0_retro = [0, 320, 8, 4, 0],
     corteCompton = (70, 120),
     p0_compton = [0, 320, 8, 4, 0],
-    mostrarGraficoRetro = True, 
-    mostrarGraficoCompton = True, 
+    mostrarGraficaRetro = True, 
+    mostrarGraficaCompton = True, 
 ):
     def cortar_espectro(izquierda, derecha, p0, mostrarGrafica):
         x_data = df["Canal"][izquierda:derecha]
@@ -233,8 +234,6 @@ def devolver_energia_cuentas(
     parametros2, errores2 = cortar_espectro(*corte2, p0_2, mostrarGrafica2)
 
     # --- Calibración ---
-    Energia = [32, 662]
-    errEnergia = [0.001, 0.001]
     canal = [parametros1[1], parametros2[1]]
     errCanal = [errores1[1], errores2[1]]
     # Esto está mal, porque no sirve un ajuste de dos valores, lo haré a mano
@@ -257,7 +256,10 @@ def devolver_energia_cuentas(
         graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía (keV)', 'Cuentas')
 
     
-    parametros1, errores1 = cortar_espectro(*corteRetro, p0_retro, mostrarGraficaRetro)
+    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
+        E, Cuentas, errCuentas, errE, p0=p0_retro, mostrar_grafica=mostrarGraficaRetro
+    )
+    
     # Retornamos resultados
     return E, errE, errCuentas, {
         "pico1": {"parametros": parametros1, "errores": errores1},

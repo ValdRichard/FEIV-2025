@@ -1,10 +1,8 @@
-import numpy as np
-from analisis import devolver_energia_cuentas, espectro
+from analisis import devolver_energia_cuentas, espectro, graficar
 
-# --- Importamos datos del Plomo ---
+# --- Importamos datos de la Madera ---
 ruta = "./Experimento IV/Datos/"
 df = espectro(ruta, 'Cs137-madera.Spe')
-
 E, errE, errC, resultados = devolver_energia_cuentas(
     df,
     corte1=(4, 70),
@@ -14,7 +12,9 @@ E, errE, errC, resultados = devolver_energia_cuentas(
     p0_2=[0, 660, 8, 4, 0],
     mostrarGrafica2=False,
     mostrarGraficaFinal=False,
-    mostrarGraficaRetro=True, 
-    corteRetro=(160, 280),
-    p0_retro=[1, 214, 30, 4, 0]
+    mostrarGraficaRetro=True,
+    mostrarGraficaCompton=True, 
+    corteRetro=(140, 300),
+    p0_Compton = [0, 400, 8, 2],
+    corteCompton=(400, 550)
 )

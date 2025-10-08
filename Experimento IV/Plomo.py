@@ -11,6 +11,11 @@ E, errE, errC, resultados = devolver_energia_cuentas(
     mostrarGrafica1=False,
     corte2=(540, 800),
     p0_2=[0, 660, 8, 4, 0],
-    mostrarGrafica2=True,
-    mostrarGraficaFinal=True,
+    mostrarGrafica2=False,
+    mostrarGraficaFinal=False,
+    mostrarGraficaRetro=False,
+    mostrarGraficaCompton=True, 
+    corteRetro=(140, 300),
+    p0_Compton = [0, 400, 8, 2],
+    corteCompton=(400, 550)
 )

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
-
+from scipy.special import erf
 def fit_lineal(x, y, err_x=None, err_y=None):
     # Conversión a arrays
     x = np.array(x, dtype=float)
@@ -117,6 +117,73 @@ def funcion_gaussiana(beta, x):
     """
     return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4]
 
+def funcion_borde_compton(beta, x):
+    """
+    Modelo del borde Compton (función tipo error con desplazamiento vertical).
+    
+    beta[0] = A      (amplitud)
+    beta[1] = xc     (posición del borde)
+    beta[2] = sigma  (ancho)
+    beta[3] = y0     (desplazamiento vertical)
+    """
+    A, xc, sigma, y0 = beta
+    z = (x - xc) / (np.sqrt(2) * sigma)
+    return A * (1 - erf(z)) + y0
+
+
+def ajustar_borde_compton(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True):
+    """
+    Ajusta un borde Compton con ODR usando la función tipo error + y0.
+    """
+    if p0 is None:
+        A0 = np.max(y_data) - np.min(y_data)
+        xc0 = x_data[np.argmax(np.gradient(y_data))]
+        sigma0 = (np.max(x_data) - np.min(x_data)) / 20
+        y0 = np.min(y_data)
+        p0 = [A0, xc0, sigma0, y0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_borde_compton)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_borde_compton(parametros, x)
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'xc={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}'))
+        
+        plt.xlabel('Energía (keV)')
+        plt.ylabel('Cuentas')
+        plt.title('Ajuste del borde Compton con ODR')
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
 
 def ajustar_gaussiana_odr(x_data, y_data, 
                           x_err=None, y_err=None, 
@@ -199,6 +266,14 @@ def cortar_datos(izquierda, derecha, x, y, x_err, y_err):
     y_err = y_err[izquierda:derecha]
     return x_data, y_data, x_err, y_err
 
+
+def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True):
+    """Ajusta un pico gaussiano con ODR"""
+    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica
+    )
+    return parametros, errores, output, gauss_ajustada
+
 def devolver_energia_cuentas(
     df,
     corte1=(13, 60),
@@ -209,29 +284,25 @@ def devolver_energia_cuentas(
     mostrarGrafica2=True,
     mostrarGraficaFinal=True,
     corteRetro = (70, 120),
-    p0_retro = [0, 320, 8, 4, 0],
     corteCompton = (70, 120),
-    p0_compton = [0, 320, 8, 4, 0],
+    p0_Compton = [0, 320, 8, 2],
     mostrarGraficaRetro = True, 
     mostrarGraficaCompton = True, 
 ):
-    def cortar_espectro(izquierda, derecha, p0, mostrarGrafica):
-        x_data = df["Canal"][izquierda:derecha]
-        x_err = np.full(len(x_data), 1/1024, dtype=float)
-        y_data = df["Cuentas"][izquierda:derecha]
-        y_err = np.sqrt(y_data)
+   # --- Definimos arrays base ---
+    x = df["Canal"].values
+    y = df["Cuentas"].values
+    x_err = np.full(len(x), 1/1024, dtype=float)
+    y_err = np.sqrt(y)
 
-        parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-            x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica
-        )
+    # --- Ajuste del primer pico ---
+    x1, y1, xerr1, yerr1 = cortar_datos(*corte1, x, y, x_err, y_err)
+    parametros1, errores1, _, _ = ajustar_pico_gaussiano(x1, y1, xerr1, yerr1, p0_1, mostrarGrafica1)
 
-        # print("Parámetros ajustados:", parametros)
-        # print("Errores estándar:", errores)
-        return parametros, errores
+    # --- Ajuste del segundo pico ---
+    x2, y2, xerr2, yerr2 = cortar_datos(*corte2, x, y, x_err, y_err)
+    parametros2, errores2, _, _ = ajustar_pico_gaussiano(x2, y2, xerr2, yerr2, p0_2, mostrarGrafica2)
 
-    # --- Ajuste de los dos picos ---
-    parametros1, errores1 = cortar_espectro(*corte1, p0_1, mostrarGrafica1)
-    parametros2, errores2 = cortar_espectro(*corte2, p0_2, mostrarGrafica2)
 
     # --- Calibración ---
     canal = [parametros1[1], parametros2[1]]
@@ -254,10 +325,30 @@ def devolver_energia_cuentas(
     # print(f"Errores en E: {errE}")
     if mostrarGraficaFinal:
         graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía (keV)', 'Cuentas')
-
     
-    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-        E, Cuentas, errCuentas, errE, p0=p0_retro, mostrar_grafica=mostrarGraficaRetro
+    E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
+        *corteRetro, E, Cuentas, errE, errCuentas
+    )
+
+    # --- Estimaciones iniciales ---
+    A0 = np.max(Cuentas_retro) - np.min(Cuentas_retro)
+    mu0 = E_retro[np.argmax(Cuentas_retro)]
+    sigma0 = 10  # ancho estimado (keV)
+    m_lin0 = -2  # pendiente inicial negativa (fondo)
+    b_lin0 = np.min(Cuentas_retro)
+    p0_retro = [A0, mu0, sigma0, m_lin0, b_lin0]
+
+    # --- Ajuste gaussiano + fondo lineal ---
+    parametros_retro, errores_retro, _, _ = ajustar_pico_gaussiano(
+        E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro
+    )
+
+    E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(
+        *corteCompton, E, Cuentas, errE, errCuentas
+    )
+    # --- Ajuste gaussiano + fondo lineal ---
+    parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
+        E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton
     )
     
     # Retornamos resultados

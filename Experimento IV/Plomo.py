@@ -13,9 +13,11 @@ E, errE, errC, resultados = devolver_energia_cuentas(
     p0_2=[0, 660, 8, 4, 0],
     mostrarGrafica2=False,
     mostrarGraficaFinal=False,
-    mostrarGraficaRetro=False,
+    mostrarGraficaRetro=True,
     mostrarGraficaCompton=True, 
     corteRetro=(140, 300),
-    p0_Compton = [0, 400, 8, 2],
-    corteCompton=(400, 550)
+    p0_Compton = [0, 474, 8, 2],
+    corteCompton=(400, 550),
+    nombre_archivoRetro = 'RetroPlomo',
+    nombre_archivoCompton = 'ComptonPlomo'
 )

@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import os
+from datetime import datetime
 import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
 from scipy.special import erf
@@ -133,9 +135,11 @@ def funcion_borde_compton(beta, x):
 
 def ajustar_borde_compton(x_data, y_data, 
                           x_err=None, y_err=None, 
-                          p0=None, mostrar_grafica=True):
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
     """
     Ajusta un borde Compton con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
     """
     if p0 is None:
         A0 = np.max(y_data) - np.min(y_data)
@@ -160,6 +164,12 @@ def ajustar_borde_compton(x_data, y_data,
     def borde_compton_ajustada(x):
         return funcion_borde_compton(parametros, x)
 
+    # Calcular R²
+    y_pred = borde_compton_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+
     if mostrar_grafica:
         plt.figure(figsize=(10,6))
         plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
@@ -172,53 +182,55 @@ def ajustar_borde_compton(x_data, y_data,
         plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
                  label=(f'Borde Compton ODR\n'
                         f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
-                        f'xc={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
                         f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
-                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}'))
+                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'R²={r2:.4f}'))
         
-        plt.xlabel('Energía (keV)')
+        plt.xlabel('Energía [keV]')
         plt.ylabel('Cuentas')
-        plt.title('Ajuste del borde Compton con ODR')
         plt.legend()
         plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento IV/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
         plt.show()
 
     return parametros, errores, output, borde_compton_ajustada
 
 def ajustar_gaussiana_odr(x_data, y_data, 
                           x_err=None, y_err=None, 
-                          p0=None, mostrar_grafica=True):
-    # Valores iniciales por defecto
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana"):
     if p0 is None:
         p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
     
-    # Manejo de errores si no se pasan
     if x_err is None:
-        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)  # 1% del rango
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
     if y_err is None:
-        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)  # 1% del rango
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
     
-    # Crear el modelo para ODR
     modelo_gauss = Model(funcion_gaussiana)
-    
-    # Crear datos con errores
     datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
-    
-    # Configurar ODR
     odr = ODR(datos_odr, modelo_gauss, beta0=p0)
-    
-    # Ejecutar el ajuste
     output = odr.run()
     
-    # Extraer resultados
     parametros = output.beta
     errores = output.sd_beta
     
-    # Función ajustada
     def gaussiana_ajustada(x):
         return funcion_gaussiana(parametros, x)
     
-    # Mostrar gráfica
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
     if mostrar_grafica:
         plt.figure(figsize=(10,6))
         plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
@@ -229,16 +241,23 @@ def ajustar_gaussiana_odr(x_data, y_data,
         y_fit = gaussiana_ajustada(x_fit)
         
         plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
-                 label=(f'Gaussiana ODR\n'
+                 label=(f'Ajuste gaussiana\n'
                         f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
-                        f'μ={parametros[1]:.2f}±{errores[1]:.2f}\n'
-                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}'))
+                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'R²={r2:.4f}'))
         
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title('Ajuste Gaussiano con ODR')
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
         plt.legend()
         plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento IV/Imagenes/Gaussiana"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
         plt.show()
     
     return parametros, errores, output, gaussiana_ajustada
@@ -267,10 +286,10 @@ def cortar_datos(izquierda, derecha, x, y, x_err, y_err):
     return x_data, y_data, x_err, y_err
 
 
-def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True):
+def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True, nombre_archivo = 'None'):
     """Ajusta un pico gaussiano con ODR"""
     parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
     )
     return parametros, errores, output, gauss_ajustada
 
@@ -288,11 +307,13 @@ def devolver_energia_cuentas(
     p0_Compton = [0, 320, 8, 2],
     mostrarGraficaRetro = True, 
     mostrarGraficaCompton = True, 
+    nombre_archivoRetro = 'Retro',
+    nombre_archivoCompton = 'Compton'
 ):
    # --- Definimos arrays base ---
     x = df["Canal"].values
     y = df["Cuentas"].values
-    x_err = np.full(len(x), 1/1024, dtype=float)
+    x_err = np.full(len(x), 1/2, dtype=float)
     y_err = np.sqrt(y)
 
     # --- Ajuste del primer pico ---
@@ -318,13 +339,13 @@ def devolver_energia_cuentas(
     sb = np.sqrt((m * errCanal[0])**2 + (sm * canal[0])**2)
     
 
-    errorX = np.full(len(df["Canal"][:800]), 1/1024, dtype=float)
+    errorX = np.full(len(df["Canal"][:800]), 1/2, dtype=float)
     Cuentas = df["Cuentas"][:800]
     errCuentas = np.sqrt(df["Cuentas"][:800])
     E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
     # print(f"Errores en E: {errE}")
     if mostrarGraficaFinal:
-        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía (keV)', 'Cuentas')
+        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas')
     
     E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
         *corteRetro, E, Cuentas, errE, errCuentas
@@ -340,7 +361,7 @@ def devolver_energia_cuentas(
 
     # --- Ajuste gaussiano + fondo lineal ---
     parametros_retro, errores_retro, _, _ = ajustar_pico_gaussiano(
-        E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro
+        E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro, nombre_archivoRetro
     )
 
     E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(
@@ -348,7 +369,7 @@ def devolver_energia_cuentas(
     )
     # --- Ajuste gaussiano + fondo lineal ---
     parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
-        E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton
+        E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton, nombre_archivoCompton
     )
     
     # Retornamos resultados

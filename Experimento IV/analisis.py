@@ -308,7 +308,12 @@ def devolver_energia_cuentas(
     mostrarGraficaRetro = True, 
     mostrarGraficaCompton = True, 
     nombre_archivoRetro = 'Retro',
-    nombre_archivoCompton = 'Compton'
+    nombre_archivoCompton = 'Compton',
+    ajustarPlomo=False,
+    cortePlomo=(850, 1050),
+    p0_Plomo=None,
+    mostrarGraficaPlomo=True,
+    nombre_archivoPlomo="Plomo"
 ):
    # --- Definimos arrays base ---
     x = df["Canal"].values
@@ -371,7 +376,35 @@ def devolver_energia_cuentas(
     parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
         E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton, nombre_archivoCompton
     )
-    
+    resultados_plomo = None
+    if ajustarPlomo:
+        E_Plomo, Cuentas_Plomo, errE_Plomo, errCuentas_Plomo = cortar_datos(
+            *cortePlomo, E, Cuentas, errE, errCuentas
+        )
+
+        # Si no se proporcionan parámetros iniciales, estimamos automáticamente
+        if p0_Plomo is None:
+            A0 = np.max(Cuentas_Plomo) - np.min(Cuentas_Plomo)
+            mu0 = E_Plomo[np.argmax(Cuentas_Plomo)]
+            sigma0 = 10
+            m_lin0 = -1
+            b_lin0 = np.min(Cuentas_Plomo)
+            p0_Plomo = [A0, mu0, sigma0, m_lin0, b_lin0]
+
+        parametros_Plomo, errores_Plomo, _, _ = ajustar_pico_gaussiano(
+            E_Plomo,
+            Cuentas_Plomo,
+            errE_Plomo,
+            errCuentas_Plomo,
+            p0_Plomo,
+            mostrarGraficaPlomo,
+            nombre_archivoPlomo,
+        )
+
+        resultados_plomo = {
+            "parametros": parametros_Plomo,
+            "errores": errores_Plomo,
+        }
     # Retornamos resultados
     return E, errE, errCuentas, {
         "pico1": {"parametros": parametros1, "errores": errores1},

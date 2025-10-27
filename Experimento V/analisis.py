@@ -293,122 +293,233 @@ def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True
     )
     return parametros, errores, output, gauss_ajustada
 
-def devolver_energia_cuentas(
-    df,
-    corte1=(13, 60),
-    p0_1=[0, 30, 7, 4, 0],
-    mostrarGrafica1=True,
-    corte2=(550, 820),
-    p0_2=[0, 662, 7, 4, 0],
-    mostrarGrafica2=True,
-    mostrarGraficaFinal=True,
-    corteRetro = (70, 120),
-    corteCompton = (70, 120),
-    p0_Compton = [0, 320, 8, 2],
-    mostrarGraficaRetro = True, 
-    mostrarGraficaCompton = True, 
-    nombre_archivoRetro = 'Retro',
-    nombre_archivoCompton = 'Compton',
-    ajustarPlomo=False,
-    cortePlomo=(850, 1050),
-    p0_Plomo=None,
-    mostrarGraficaPlomo=True,
-    nombre_archivoPlomo="Plomo"
-):
-   # --- Definimos arrays base ---
-    x = df["Canal"].values
-    y = df["Cuentas"].values
-    x_err = np.full(len(x), 1/2, dtype=float)
-    y_err = np.sqrt(y)
+mostrarGrafica1=True,
+mostrarGrafica2=True,
+mostrarGraficaFinal=True,
 
 
-    # --- Ajuste del primer pico ---
-    x1, y1, xerr1, yerr1 = cortar_datos(*corte1, x, y, x_err, y_err)
-    parametros1, errores1, _, _ = ajustar_pico_gaussiano(x1, y1, xerr1, yerr1, p0_1, mostrarGrafica1)
+ruta = "./Experimento V/Datos/"
 
-    # --- Ajuste del segundo pico ---
-    x2, y2, xerr2, yerr2 = cortar_datos(*corte2, x, y, x_err, y_err)
-    parametros2, errores2, _, _ = ajustar_pico_gaussiano(x2, y2, xerr2, yerr2, p0_2, mostrarGrafica2)
+df_Co = espectro( ruta, 'Co60-18-9.Spe')
+
+df_Cs = espectro( ruta, 'Cs137-18-9-1800s.Spe')
+
+df_Na = espectro( ruta, 'Na22-18-9-1800s.Spe')
+
+df_Ba = espectro( ruta, 'Ba133-18-9-1800s.Spe')
+
+# --- Definimos arrays base ---
+x_Co = df_Co["Canal"].values
+y_Co = df_Co["Cuentas"].values
+
+x_Cs = df_Cs["Canal"].values
+y_Cs = df_Cs["Cuentas"].values
+
+x_Na = df_Na["Canal"].values
+y_Na = df_Na["Cuentas"].values
+
+x_Ba = df_Ba["Canal"].values
+y_Ba = df_Ba["Cuentas"].values
+
+x_Co_err = np.full(len(x_Co), 1/2, dtype=float)
+y_Co_err = np.sqrt(y_Co)
+
+x_Cs_err = np.full(len(x_Cs), 1/2, dtype=float)
+y_Cs_err = np.sqrt(y_Cs)
+
+x_Na_err = np.full(len(x_Na), 1/2, dtype=float)
+y_Na_err = np.sqrt(y_Na)
+
+x_Ba_err = np.full(len(x_Ba), 1/2, dtype=float)
+y_Ba_err = np.sqrt(y_Ba)
+
+graficar(x_Co, y_Co, "canal", "cuentas")
+
+graficar(x_Cs, y_Cs, "canal", "cuentas")
+
+graficar(x_Na, y_Na, "canal", "cuentas")
+
+graficar(x_Ba, y_Ba, "canal", "cuentas")
+
+#PICOS DE AJUSTE LINEAL
+
+#COBALTO 
+
+corte1_Co=(13, 60),
+p0_1_Co=[0, 695, 7, 4, 0],
+
+corte2_Co=(550, 820),
+p0_2_Co=[0, 790, 7, 4, 0],
+
+# --- Ajuste del primer pico ---
+x1_Co, y1_Co, xerr1_Co, yerr1_Co = cortar_datos(*corte1_Co, x_Co, y_Co, x_Co_err, y_Co_err)
+parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, mostrarGrafica1)
+
+# --- Ajuste del segundo pico ---
+x2_Co, y2_Co, xerr2_Co, yerr2_Co = cortar_datos(*corte2_Co, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Co, y2_Co, xerr2_Co, yerr2_Co, p0_2_Co, mostrarGrafica2)
 
 
-    # --- Calibración ---
-    canal = [parametros1[1], parametros2[1]]
-    errCanal = [errores1[1], errores2[1]]
-    # Esto está mal, porque no sirve un ajuste de dos valores, lo haré a mano
-    # m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
+#CESIO
+
+corte1_Cs=(13, 60),
+p0_1_Cs=[0, 15, 7, 4, 0],
+
+corte2_Cs=(550, 820),
+p0_2_Cs=[0, 400, 7, 4, 0],
+
+# --- Ajuste del primer pico ---
+x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs = cortar_datos(*corte1_Cs, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros1, errores1, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, mostrarGrafica1)
+
+# --- Ajuste del segundo pico ---
+x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs = cortar_datos(*corte2_Cs, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, mostrarGrafica2)
+
+
+#SODIO
+
+corte1_Na=(13, 60),
+p0_1_Na=[0, 304, 7, 4, 0],
+
+corte2_Na=(550, 820),
+p0_2_Na=[0, 750, 7, 4, 0],
+
+# --- Ajuste del primer pico ---
+x1_Na, y1_Na, xerr1_Na, yerr1_Na = cortar_datos(*corte1_Na, x_Na, y_Na, x_Na_err, y_Na_err)
+parametros1_Na, errores1_Na, _, _ = ajustar_pico_gaussiano(x1_Na, y1_Na, xerr1_Na, yerr1_Na, p0_1_Na, mostrarGrafica1)
+
+# --- Ajuste del segundo pico ---
+x2_Na, y2_Na, xerr2_Na, yerr2_Na = cortar_datos(*corte2_Na, x_Na, y_Na, x_Na_err, y_Na_err)
+parametros2_Na, errores2_Na, _, _ = ajustar_pico_gaussiano(x2_Na, y2_Na, xerr2_Na, yerr2_Na, p0_2_Na, mostrarGrafica2)
+
+
+#BARIO 
+
+corte1_Ba=(5, 30),
+p0_1_Ba=[0, 15, 7, 4, 0],
+
+corte2_Ba=(30, 70),
+p0_2_Ba=[0, 47, 7, 4, 0],
+
+corte3_Ba=(190, 250),
+p0_3_Ba=[0, 215, 7, 4, 0],
+
+# --- Ajuste del primer pico ---
+x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba = cortar_datos(*corte1_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+parametros1_Ba, errores1_Ba, _, _ = ajustar_pico_gaussiano(x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba, p0_1_Ba, mostrarGrafica1)
+
+# --- Ajuste del segundo pico ---
+x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba = cortar_datos(*corte2_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, mostrarGrafica2)
+
+# --- Ajuste del tercero pico ---
+x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba = cortar_datos(*corte3_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, mostrarGrafica2)
+
+#m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
+
+# def devolver_energia_cuentas(
+#     corte1=(13, 60),
+#     p0_1=[0, 30, 7, 4, 0],
+#     mostrarGrafica1=True,
+#     corte2=(550, 820),
+#     p0_2=[0, 662, 7, 4, 0],
+#     mostrarGrafica2=True,
+#     mostrarGraficaFinal=True,
+#     corteRetro = (70, 120),
+#     corteCompton = (70, 120),
+#     p0_Compton = [0, 320, 8, 2],
+#     mostrarGraficaRetro = True, 
+#     mostrarGraficaCompton = True, 
+#     nombre_archivoRetro = 'Retro',
+#     nombre_archivoCompton = 'Compton',
+#     ajustarPlomo=False,
+#     cortePlomo=(850, 1050),
+#     p0_Plomo=None,
+#     mostrarGraficaPlomo=True,
+#     nombre_archivoPlomo="Plomo"
+# ):
+
+
+#     # --- Calibración ---
+#     canal = [parametros1[1], parametros2[1]]
+#     errCanal = [errores1[1], errores2[1]]
+#     # Esto está mal, porque no sirve un ajuste de dos valores, lo haré a mano
+#     # m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
 
     
-    # print(canal[1] - canal[0])
-    m =(662-32)/(canal[1] - canal[0])
-    b = -m * canal[0] + 32
-    sm = np.sqrt(errCanal[0]**2 + errCanal[1]**2) * ((662-32)/(canal[1] - canal[0])**2)
-    sb = np.sqrt((m * errCanal[0])**2 + (sm * canal[0])**2)
+#     # print(canal[1] - canal[0])
+#     m =(662-32)/(canal[1] - canal[0])
+#     b = -m * canal[0] + 32
+#     sm = np.sqrt(errCanal[0]**2 + errCanal[1]**2) * ((662-32)/(canal[1] - canal[0])**2)
+#     sb = np.sqrt((m * errCanal[0])**2 + (sm * canal[0])**2)
     
 
-    errorX = np.full(len(df["Canal"][:800]), 1/2, dtype=float)
-    Cuentas = df["Cuentas"][:800]
-    errCuentas = np.sqrt(df["Cuentas"][:800])
-    E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
-    # print(f"Errores en E: {errE}")
-    if mostrarGraficaFinal:
-        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas')
+#     errorX = np.full(len(df["Canal"][:800]), 1/2, dtype=float)
+#     Cuentas = df["Cuentas"][:800]
+#     errCuentas = np.sqrt(df["Cuentas"][:800])
+#     E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
+#     # print(f"Errores en E: {errE}")
+#     if mostrarGraficaFinal:
+#         graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas')
     
-    E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
-        *corteRetro, E, Cuentas, errE, errCuentas
-    )
+#     E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
+#         *corteRetro, E, Cuentas, errE, errCuentas
+#     )
 
-    # --- Estimaciones iniciales ---
-    A0 = np.max(Cuentas_retro) - np.min(Cuentas_retro)
-    mu0 = E_retro[np.argmax(Cuentas_retro)]
-    sigma0 = 10  # ancho estimado (keV)
-    m_lin0 = -2  # pendiente inicial negativa (fondo)
-    b_lin0 = np.min(Cuentas_retro)
-    p0_retro = [A0, mu0, sigma0, m_lin0, b_lin0]
+#     # --- Estimaciones iniciales ---
+#     A0 = np.max(Cuentas_retro) - np.min(Cuentas_retro)
+#     mu0 = E_retro[np.argmax(Cuentas_retro)]
+#     sigma0 = 10  # ancho estimado (keV)
+#     m_lin0 = -2  # pendiente inicial negativa (fondo)
+#     b_lin0 = np.min(Cuentas_retro)
+#     p0_retro = [A0, mu0, sigma0, m_lin0, b_lin0]
 
-    # --- Ajuste gaussiano + fondo lineal ---
-    parametros_retro, errores_retro, _, _ = ajustar_pico_gaussiano(
-        E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro, nombre_archivoRetro
-    )
+#     # --- Ajuste gaussiano + fondo lineal ---
+#     parametros_retro, errores_retro, _, _ = ajustar_pico_gaussiano(
+#         E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro, nombre_archivoRetro
+#     )
 
-    E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(
-        *corteCompton, E, Cuentas, errE, errCuentas
-    )
-    # --- Ajuste gaussiano + fondo lineal ---
-    parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
-        E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton, nombre_archivoCompton
-    )
-    resultados_plomo = None
-    if ajustarPlomo:
-        E_Plomo, Cuentas_Plomo, errE_Plomo, errCuentas_Plomo = cortar_datos(
-            *cortePlomo, E, Cuentas, errE, errCuentas
-        )
+#     E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(
+#         *corteCompton, E, Cuentas, errE, errCuentas
+#     )
+#     # --- Ajuste gaussiano + fondo lineal ---
+#     parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
+#         E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton, nombre_archivoCompton
+#     )
+#     resultados_plomo = None
+#     if ajustarPlomo:
+#         E_Plomo, Cuentas_Plomo, errE_Plomo, errCuentas_Plomo = cortar_datos(
+#             *cortePlomo, E, Cuentas, errE, errCuentas
+#         )
 
-        # Si no se proporcionan parámetros iniciales, estimamos automáticamente
-        if p0_Plomo is None:
-            A0 = np.max(Cuentas_Plomo) - np.min(Cuentas_Plomo)
-            mu0 = E_Plomo[np.argmax(Cuentas_Plomo)]
-            sigma0 = 10
-            m_lin0 = -1
-            b_lin0 = np.min(Cuentas_Plomo)
-            p0_Plomo = [A0, mu0, sigma0, m_lin0, b_lin0]
+#         # Si no se proporcionan parámetros iniciales, estimamos automáticamente
+#         if p0_Plomo is None:
+#             A0 = np.max(Cuentas_Plomo) - np.min(Cuentas_Plomo)
+#             mu0 = E_Plomo[np.argmax(Cuentas_Plomo)]
+#             sigma0 = 10
+#             m_lin0 = -1
+#             b_lin0 = np.min(Cuentas_Plomo)
+#             p0_Plomo = [A0, mu0, sigma0, m_lin0, b_lin0]
 
-        parametros_Plomo, errores_Plomo, _, _ = ajustar_pico_gaussiano(
-            E_Plomo,
-            Cuentas_Plomo,
-            errE_Plomo,
-            errCuentas_Plomo,
-            p0_Plomo,
-            mostrarGraficaPlomo,
-            nombre_archivoPlomo,
-        )
+#         parametros_Plomo, errores_Plomo, _, _ = ajustar_pico_gaussiano(
+#             E_Plomo,
+#             Cuentas_Plomo,
+#             errE_Plomo,
+#             errCuentas_Plomo,
+#             p0_Plomo,
+#             mostrarGraficaPlomo,
+#             nombre_archivoPlomo,
+#         )
 
-        resultados_plomo = {
-            "parametros": parametros_Plomo,
-            "errores": errores_Plomo,
-        }
-    # Retornamos resultados
-    return E, errE, errCuentas, {
-        "pico1": {"parametros": parametros1, "errores": errores1},
-        "pico2": {"parametros": parametros2, "errores": errores2},
-        "ajuste_lineal": {"m": m, "sm": sm, "b": b, "sb": sb},
-    }
+#         resultados_plomo = {
+#             "parametros": parametros_Plomo,
+#             "errores": errores_Plomo,
+#         }
+#     # Retornamos resultados
+#     return E, errE, errCuentas, {
+#         "pico1": {"parametros": parametros1, "errores": errores1},
+#         "pico2": {"parametros": parametros2, "errores": errores2},
+#         "ajuste_lineal": {"m": m, "sm": sm, "b": b, "sb": sb},
+#     }

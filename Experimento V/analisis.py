@@ -119,6 +119,22 @@ def funcion_gaussiana(beta, x):
     """
     return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4]
 
+def funcion_gaussiana_doble(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud 1
+    beta[1] = media 1
+    beta[2] = sigma 1
+    beta[3] = pendiente 1
+    beta[4] = ordenada 1
+    beta[5] = amplitud 2
+    beta[6] = media 2
+    beta[7] = sigma 2
+    beta[8] = pendiente 2
+    beta[9] = ordenada 2
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4] + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2)) + beta[8] * x + beta[9]
+
 def funcion_borde_compton(beta, x):
     """
     Modelo del borde Compton (función tipo error con desplazamiento vertical).
@@ -333,31 +349,31 @@ y_Na_err = np.sqrt(y_Na)
 x_Ba_err = np.full(len(x_Ba), 1/2, dtype=float)
 y_Ba_err = np.sqrt(y_Ba)
 
-graficar(x_Co, y_Co, "canal", "cuentas")
+#graficar_con_error(x_Co, y_Co, x_Co_err, y_Co_err, "canal", "cuentas")
 
-graficar(x_Cs, y_Cs, "canal", "cuentas")
+graficar_con_error(x_Cs, y_Cs, x_Cs_err, y_Cs_err, "canal", "cuentas")
 
-graficar(x_Na, y_Na, "canal", "cuentas")
+#graficar_con_error(x_Na, y_Na, x_Na_err, y_Na_err, "canal", "cuentas")
 
-graficar(x_Ba, y_Ba, "canal", "cuentas")
+#graficar_con_error(x_Ba, y_Ba, x_Ba_err, y_Ba_err, "canal", "cuentas")
 
 #PICOS DE AJUSTE LINEAL
 
 #COBALTO 
 
-corte1_Co=(13, 60),
+corte1_Co=[13, 60],
 p0_1_Co=[0, 695, 7, 4, 0],
 
-corte2_Co=(550, 820),
+corte2_Co=[550, 820],
 p0_2_Co=[0, 790, 7, 4, 0],
 
 # --- Ajuste del primer pico ---
-x1_Co, y1_Co, xerr1_Co, yerr1_Co = cortar_datos(*corte1_Co, x_Co, y_Co, x_Co_err, y_Co_err)
+x1_Co, y1_Co, xerr1_Co, yerr1_Co = cortar_datos(corte1_Co[0], corte1_Co[1], x_Co, y_Co, x_Co_err, y_Co_err)
 parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, mostrarGrafica1)
 
 # --- Ajuste del segundo pico ---
-x2_Co, y2_Co, xerr2_Co, yerr2_Co = cortar_datos(*corte2_Co, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Co, y2_Co, xerr2_Co, yerr2_Co, p0_2_Co, mostrarGrafica2)
+x2_Co, y2_Co, xerr2_Co, yerr2_Co = cortar_datos(corte2_Co, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros2_Co, errores2_Co, _, _ = ajustar_pico_gaussiano(x2_Co, y2_Co, xerr2_Co, yerr2_Co, p0_2_Co, mostrarGrafica2)
 
 
 #CESIO
@@ -369,12 +385,13 @@ corte2_Cs=(550, 820),
 p0_2_Cs=[0, 400, 7, 4, 0],
 
 # --- Ajuste del primer pico ---
-x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs = cortar_datos(*corte1_Cs, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros1, errores1, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, mostrarGrafica1)
+x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs = cortar_datos(corte1_Cs[0], corte1_Cs[1], x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros1_Cs, errores1_Cs, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, mostrarGrafica1)
 
 # --- Ajuste del segundo pico ---
 x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs = cortar_datos(*corte2_Cs, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
 parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, mostrarGrafica2)
+
 
 
 #SODIO
@@ -413,7 +430,7 @@ parametros1_Ba, errores1_Ba, _, _ = ajustar_pico_gaussiano(x1_Ba, y1_Ba, xerr1_B
 x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba = cortar_datos(*corte2_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
 parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, mostrarGrafica2)
 
-# --- Ajuste del tercero pico ---
+# --- Ajuste del tercer pico ---
 x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba = cortar_datos(*corte3_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
 parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, mostrarGrafica2)
 

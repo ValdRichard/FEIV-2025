@@ -33,9 +33,36 @@ def fit_lineal(x, y, err_x=None, err_y=None):
     odr = ODR(data, modelo, beta0=beta0)
     out = odr.run()
 
+    y_pred = f_lineal(x)
+
+    # Coeficiente de determinación R²
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    r2 = 1 - ss_res / ss_tot
+
     # Parámetros ajustados
     m, b = out.beta
     sm, sb = out.sd_beta
+
+    plt.figure(figsize=(10,6))
+    plt.errorbar(x, y, xerr=err_x, yerr=err_y, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+    x_fit = np.linspace(np.min(x), np.max(x), 1000)
+    y_fit = f_lineal(x_fit)
+        
+    plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'm={m:.2f}±{sm:.2f}\n'
+                        f'b={b:.2f}±{sb:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+    plt.xlabel('Energía [keV]')
+    plt.ylabel('Cuentas')
+    plt.legend()
+    plt.grid(alpha=0.3)
+
 
     # # Predicción del modelo
     # y_pred = f_lineal(out.beta, x)
@@ -44,11 +71,6 @@ def fit_lineal(x, y, err_x=None, err_y=None):
     # chi2 = np.sum(((y - y_pred) / np.maximum(err_y, 1e-12)) ** 2)
     # dof = len(y) - len(out.beta)
     # chi2_red = chi2 / dof if dof > 0 else np.nan
-
-    # # Coeficiente de determinación R²
-    # ss_res = np.sum((y - y_pred) ** 2)
-    # ss_tot = np.sum((y - np.mean(y)) ** 2)
-    # r2 = 1 - ss_res / ss_tot
 
     return m, sm, b, sb
     # return m, sm, b, sb, chi2_red, r2
@@ -125,15 +147,28 @@ def funcion_gaussiana_doble(beta, x):
     beta[0] = amplitud 1
     beta[1] = media 1
     beta[2] = sigma 1
-    beta[3] = pendiente 1
-    beta[4] = ordenada 1
+    beta[3] = pendiente 
+    beta[4] = ordenada 
     beta[5] = amplitud 2
     beta[6] = media 2
     beta[7] = sigma 2
-    beta[8] = pendiente 2
-    beta[9] = ordenada 2
     """
-    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4] + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2)) + beta[8] * x + beta[9]
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4] + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2))
+
+def funcion_gaussiana_CUADRUPLE(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud 1
+    beta[1] = media 1
+    beta[2] = sigma 1
+    beta[3] = pendiente 
+    beta[4] = ordenada 
+    beta[5] = amplitud 2
+    beta[6] = media 2
+    beta[7] = sigma 2
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4] + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2)) + beta[8] * np.exp(-(x - beta[9])**2 / (2 * beta[10]**2)) + beta[11] * np.exp(-(x - beta[12])**2 / (2 * beta[13]**2))
+
 
 def funcion_borde_compton(beta, x):
     """
@@ -278,6 +313,135 @@ def ajustar_gaussiana_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
+def ajustar_gaussiana_doble_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana doble"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_doble)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_doble(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'A_1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'C_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'A_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'C_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Canal')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/Gaussiana doble"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
+
+def ajustar_gaussiana_cuadruple_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana cuadruple"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_CUADRUPLE)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_CUADRUPLE(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'C_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'C_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'C_3={parametros[9]:.2f}±{errores[9]:.2f}\n'
+                        f'σ_3={parametros[10]:.2f}±{errores[10]:.2f}\n'
+                        f'C_4={parametros[12]:.2f}±{errores[12]:.2f}\n'
+                        f'σ_4={parametros[13]:.2f}±{errores[13]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Canal')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/Gaussiana doble"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
+
+
 def calibrar(canal, sigma_canal, m, b, sm, sb):
     
     canal = np.array(canal, dtype=float)
@@ -309,20 +473,43 @@ def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True
     )
     return parametros, errores, output, gauss_ajustada
 
-mostrarGrafica1=True,
-mostrarGrafica2=True,
+def ajustar_pico_gaussiano_doble(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True, nombre_archivo = 'None'):
+    """Ajusta un pico gaussiano doble con ODR"""
+    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_doble_odr(
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
+    )
+    return parametros, errores, output, gauss_ajustada
+
+
+def ajustar_pico_gaussiano_CUADRUPLE(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True, nombre_archivo = 'None'):
+    """Ajusta un pico gaussiano doble con ODR"""
+    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_cuadruple_odr(
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
+    )
+    return parametros, errores, output, gauss_ajustada
+
+mostrarGrafica1=False,
 mostrarGraficaFinal=True,
 
 
 ruta = "./Experimento V/Datos/"
 
-df_Co = espectro( ruta, 'Co60-18-9.Spe')
+df_Co_malos = espectro( ruta, 'Co60-18-9.Spe')
 
-df_Cs = espectro( ruta, 'Cs137-18-9-1800s.Spe')
+df_Cs_malos = espectro( ruta, 'Cs137-18-9-1800s.Spe')
 
-df_Na = espectro( ruta, 'Na22-18-9-1800s.Spe')
+df_Na_malos = espectro( ruta, 'Na22-18-9-1800s.Spe')
 
-df_Ba = espectro( ruta, 'Ba133-18-9-1800s.Spe')
+df_Ba_malos = espectro( ruta, 'Ba133-18-9-1800s.Spe')
+
+df_Co = df_Co_malos[:900]
+
+df_Cs = df_Cs_malos[:495]
+
+df_Na_malos = df_Na_malos.drop(659)
+df_Na = df_Na_malos[:812]
+
+df_Ba = df_Ba_malos[:295]
 
 # --- Definimos arrays base ---
 x_Co = df_Co["Canal"].values
@@ -349,92 +536,91 @@ y_Na_err = np.sqrt(y_Na)
 x_Ba_err = np.full(len(x_Ba), 1/2, dtype=float)
 y_Ba_err = np.sqrt(y_Ba)
 
-#graficar_con_error(x_Co, y_Co, x_Co_err, y_Co_err, "canal", "cuentas")
+# graficar_con_error(x_Co, y_Co, x_Co_err, y_Co_err, "canal", "cuentas")
 
-graficar_con_error(x_Cs, y_Cs, x_Cs_err, y_Cs_err, "canal", "cuentas")
+# graficar_con_error(x_Cs, y_Cs, x_Cs_err, y_Cs_err, "canal", "cuentas")
 
-#graficar_con_error(x_Na, y_Na, x_Na_err, y_Na_err, "canal", "cuentas")
+# graficar_con_error(x_Na, y_Na, x_Na_err, y_Na_err, "canal", "cuentas")
 
-#graficar_con_error(x_Ba, y_Ba, x_Ba_err, y_Ba_err, "canal", "cuentas")
+graficar_con_error(x_Ba, y_Ba, x_Ba_err, y_Ba_err, "canal", "cuentas")
 
 #PICOS DE AJUSTE LINEAL
 
 #COBALTO 
 
-corte1_Co=[13, 60],
-p0_1_Co=[0, 695, 7, 4, 0],
-
-corte2_Co=[550, 820],
-p0_2_Co=[0, 790, 7, 4, 0],
+corte1_Co=[620, 880]
+p0_1_Co=[0, 693, 7, 4, 0, 0, 788, 7]
 
 # --- Ajuste del primer pico ---
 x1_Co, y1_Co, xerr1_Co, yerr1_Co = cortar_datos(corte1_Co[0], corte1_Co[1], x_Co, y_Co, x_Co_err, y_Co_err)
-parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, mostrarGrafica1)
-
-# --- Ajuste del segundo pico ---
-x2_Co, y2_Co, xerr2_Co, yerr2_Co = cortar_datos(corte2_Co, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros2_Co, errores2_Co, _, _ = ajustar_pico_gaussiano(x2_Co, y2_Co, xerr2_Co, yerr2_Co, p0_2_Co, mostrarGrafica2)
-
+parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano_doble(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, mostrarGrafica1)
 
 #CESIO
 
-corte1_Cs=(13, 60),
-p0_1_Cs=[0, 15, 7, 4, 0],
+corte1_Cs=[1, 30]
+p0_1_Cs=[0, 15, 7, -1, 0]
 
-corte2_Cs=(550, 820),
-p0_2_Cs=[0, 400, 7, 4, 0],
+corte2_Cs=[350, 520]
+p0_2_Cs=[0, 400, 7, 4, 0]
 
-# --- Ajuste del primer pico ---
+# # --- Ajuste del primer pico ---
 x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs = cortar_datos(corte1_Cs[0], corte1_Cs[1], x_Cs, y_Cs, x_Cs_err, y_Cs_err)
 parametros1_Cs, errores1_Cs, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, mostrarGrafica1)
 
-# --- Ajuste del segundo pico ---
-x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs = cortar_datos(*corte2_Cs, x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, mostrarGrafica2)
-
+# # --- Ajuste del segundo pico ---
+x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs = cortar_datos(corte2_Cs[0], corte2_Cs[1], x_Cs, y_Cs, x_Cs_err, y_Cs_err)
+parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, mostrarGrafica1)
 
 
 #SODIO
 
-corte1_Na=(13, 60),
-p0_1_Na=[0, 304, 7, 4, 0],
+corte1_Na=[230, 360]
+p0_1_Na=[0, 304, 7, 4, 0]
 
-corte2_Na=(550, 820),
-p0_2_Na=[0, 750, 7, 4, 0],
+corte2_Na=[660, 810]
+p0_2_Na=[0, 750, 7, 4, 0]
 
 # --- Ajuste del primer pico ---
-x1_Na, y1_Na, xerr1_Na, yerr1_Na = cortar_datos(*corte1_Na, x_Na, y_Na, x_Na_err, y_Na_err)
+x1_Na, y1_Na, xerr1_Na, yerr1_Na = cortar_datos(corte1_Na[0], corte1_Na[1], x_Na, y_Na, x_Na_err, y_Na_err)
 parametros1_Na, errores1_Na, _, _ = ajustar_pico_gaussiano(x1_Na, y1_Na, xerr1_Na, yerr1_Na, p0_1_Na, mostrarGrafica1)
 
 # --- Ajuste del segundo pico ---
-x2_Na, y2_Na, xerr2_Na, yerr2_Na = cortar_datos(*corte2_Na, x_Na, y_Na, x_Na_err, y_Na_err)
-parametros2_Na, errores2_Na, _, _ = ajustar_pico_gaussiano(x2_Na, y2_Na, xerr2_Na, yerr2_Na, p0_2_Na, mostrarGrafica2)
+x2_Na, y2_Na, xerr2_Na, yerr2_Na = cortar_datos(corte2_Na[0], corte2_Na[1], x_Na, y_Na, x_Na_err, y_Na_err)
+parametros2_Na, errores2_Na, _, _ = ajustar_pico_gaussiano(x2_Na, y2_Na, xerr2_Na, yerr2_Na, p0_2_Na, mostrarGrafica1)
 
 
 #BARIO 
 
-corte1_Ba=(5, 30),
-p0_1_Ba=[0, 15, 7, 4, 0],
+corte1_Ba=[2, 30]
+p0_1_Ba=[0, 14, 4, 1, 0]
 
-corte2_Ba=(30, 70),
-p0_2_Ba=[0, 47, 7, 4, 0],
+corte2_Ba=[30, 70]
+p0_2_Ba=[0, 47, 7, 4, 0]
 
-corte3_Ba=(190, 250),
-p0_3_Ba=[0, 215, 7, 4, 0],
+corte3_Ba=[150, 250]
+p0_3_Ba=[0, 185, 7, 4, 0, 0, 215, 7]
+
 
 # --- Ajuste del primer pico ---
-x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba = cortar_datos(*corte1_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba = cortar_datos(corte1_Ba[0], corte1_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
 parametros1_Ba, errores1_Ba, _, _ = ajustar_pico_gaussiano(x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba, p0_1_Ba, mostrarGrafica1)
 
 # --- Ajuste del segundo pico ---
-x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba = cortar_datos(*corte2_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
-parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, mostrarGrafica2)
+x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba = cortar_datos(corte2_Ba[0], corte2_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, mostrarGrafica1)
 
-# --- Ajuste del tercer pico ---
-x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba = cortar_datos(*corte3_Ba, x_Ba, y_Ba, x_Ba_err, y_Ba_err)
-parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, mostrarGrafica2)
+# --- Ajuste del tercer pico (doble) ---
+x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba = cortar_datos(corte3_Ba[0], corte3_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
+parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano_doble(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, mostrarGrafica1)
 
-#m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
+
+Energia = [1173.2, 1330, 33, 662, 511, 1274, 33, 81, 356.014]
+canal = [parametros1_Co[1], parametros1_Co[6], parametros1_Cs[1], parametros2_Cs[1], parametros1_Na[1], parametros2_Na[1], parametros1_Ba[1], parametros2_Ba[1], parametros3_Ba[6]] 
+errCanal = [errores1_Co[1], errores1_Co[6], errores1_Cs[1], errores2_Cs[1], errores1_Na[1], errores2_Na[1], errores1_Ba[1], errores2_Ba[1], errores3_Ba[6]]
+
+m, sm, b, sb = fit_lineal(canal, Energia, errCanal, None)
+
+
 
 # def devolver_energia_cuentas(
 #     corte1=(13, 60),
@@ -442,7 +628,7 @@ parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano(x3_Ba, y3_Ba, xerr3_B
 #     mostrarGrafica1=True,
 #     corte2=(550, 820),
 #     p0_2=[0, 662, 7, 4, 0],
-#     mostrarGrafica2=True,
+#     mostrarGrafica1=True,
 #     mostrarGraficaFinal=True,
 #     corteRetro = (70, 120),
 #     corteCompton = (70, 120),

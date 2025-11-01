@@ -5,6 +5,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
 from scipy.special import erf
+from scipy.optimize import curve_fit
+
 def fit_lineal(x, y, err_x=None, err_y=None):
     # Conversión a arrays
     x = np.array(x, dtype=float)
@@ -185,6 +187,24 @@ def funcion_borde_compton(beta, x):
     z = (x - xc) / (np.sqrt(2) * sigma)
     return A * (1 - erf(z)) + y0
 
+def funcion_Cobalto(beta, x):
+    """
+    Modelo del borde Compton (función tipo error con desplazamiento vertical).
+    
+    beta[0] = A1     (amplitud)
+    beta[1] = xc1    (posición del borde)
+    beta[2] = sigma1 (ancho)
+    beta[3] = y0_1   (desplazamiento vertical)
+    beta[4] = A2     (amplitud)
+    beta[5] = xc2    (posición del borde)
+    beta[6] = sigma2 (ancho)
+    beta[7] = y0_2   (desplazamiento vertical)
+    """
+    #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
+    A, xc, sigma, y0, a, b, c, d, e, f, = beta
+    z = (x - xc) / (np.sqrt(2) * sigma)
+    return A * (1 - erf(z)) + y0 + a * np.exp(-(x - b)**2 / (2 * c**2)) + d * np.exp(-(x - e)**2 / (2 * (f)**2))
+
 
 def ajustar_borde_compton(x_data, y_data, 
                           x_err=None, y_err=None, 
@@ -300,7 +320,7 @@ def ajustar_gaussiana_odr(x_data, y_data,
                         f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
                         f'R²={r2:.4f}'))
         
-        plt.xlabel('Energía [keV]')
+        plt.xlabel("Energía [keV]")
         plt.ylabel('Cuentas')
         plt.legend()
         plt.grid(alpha=0.3)
@@ -363,7 +383,7 @@ def ajustar_gaussiana_doble_odr(x_data, y_data,
                         f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
                         f'R²={r2:.4f}'))
         
-        plt.xlabel('Canal')
+        plt.xlabel("Energía [keV]")
         plt.ylabel('Cuentas')
         plt.legend()
         plt.grid(alpha=0.3)
@@ -428,7 +448,7 @@ def ajustar_gaussiana_cuadruple_odr(x_data, y_data,
                         f'σ_4={parametros[13]:.2f}±{errores[13]:.2f}\n'
                         f'R²={r2:.4f}'))
         
-        plt.xlabel('Canal')
+        plt.xlabel("Energía [keV]")
         plt.ylabel('Cuentas')
         plt.legend()
         plt.grid(alpha=0.3)
@@ -443,6 +463,79 @@ def ajustar_gaussiana_cuadruple_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
+def ajustar_cobalto(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
+    """
+    Ajusta la suma de dos bordes Compton y una gaussiana con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
+    """
+    if p0 is None:
+        A01 = np.max(y_data) - np.min(y_data)
+        xc01 = x_data[np.argmax(np.gradient(y_data))]
+        sigma01 = (np.max(x_data) - np.min(x_data)) / 20
+        y01 = np.min(y_data)
+        a0 = a0
+        b0 = b0
+        c0 = c0
+        d0 = d0
+        f0 = f0
+        p0 = [A01, xc01, sigma01, y01, a0, b0, c0, d0, f0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_Cobalto)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_borde_compton(parametros, x)
+
+    # # Calcular R²
+    # y_pred = borde_compton_ajustada(x_data)
+    # ss_res = np.sum((y_data - y_pred)**2)
+    # ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    # r2 = 1 - ss_res/ss_tot
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}\n')
+                        )
+    
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
 
 def calibrar(canal, sigma_canal, m, b, sm, sb):
     
@@ -471,7 +564,7 @@ def cortar_datos(izquierda, derecha, x, y, x_err, y_err):
 def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica, nombre_archivo = 'None'):
     """Ajusta un pico gaussiano con ODR"""
     parametros, errores, output, gauss_ajustada = ajustar_gaussiana_odr(
-        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo 
     )
     return parametros, errores, output, gauss_ajustada
 
@@ -489,6 +582,9 @@ def ajustar_pico_gaussiano_CUADRUPLE(x_data, y_data, x_err, y_err, p0, mostrarGr
         x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
     )
     return parametros, errores, output, gauss_ajustada
+
+
+
 
 mostrarGrafica=False,
 mostrarGraficaFinal=True,
@@ -555,7 +651,7 @@ p0_1_Co=[0, 693, 7, 4, 0, 0, 788, 7]
 
 # --- Ajuste del primer pico ---
 x1_Co, y1_Co, xerr1_Co, yerr1_Co = cortar_datos(corte1_Co[0], corte1_Co[1], x_Co, y_Co, x_Co_err, y_Co_err)
-parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano_doble(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, mostrarGrafica)
+parametros1_Co, errores1_Co, _, _ = ajustar_pico_gaussiano_doble(x1_Co, y1_Co, xerr1_Co, yerr1_Co, p0_1_Co, False)
 
 #CESIO
 
@@ -567,11 +663,11 @@ p0_2_Cs=[0, 400, 7, 4, 0]
 
 # # --- Ajuste del primer pico ---
 x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs = cortar_datos(corte1_Cs[0], corte1_Cs[1], x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros1_Cs, errores1_Cs, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, mostrarGrafica)
+parametros1_Cs, errores1_Cs, _, _ = ajustar_pico_gaussiano(x1_Cs, y1_Cs, xerr1_Cs, yerr1_Cs, p0_1_Cs, False)
 
 # # --- Ajuste del segundo pico ---
 x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs = cortar_datos(corte2_Cs[0], corte2_Cs[1], x_Cs, y_Cs, x_Cs_err, y_Cs_err)
-parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, mostrarGrafica)
+parametros2_Cs, errores2_Cs, _, _ = ajustar_pico_gaussiano(x2_Cs, y2_Cs, xerr2_Cs, yerr2_Cs, p0_2_Cs, False)
 
 
 #SODIO
@@ -584,11 +680,11 @@ p0_2_Na=[0, 750, 7, 4, 0]
 
 # --- Ajuste del primer pico ---
 x1_Na, y1_Na, xerr1_Na, yerr1_Na = cortar_datos(corte1_Na[0], corte1_Na[1], x_Na, y_Na, x_Na_err, y_Na_err)
-parametros1_Na, errores1_Na, _, _ = ajustar_pico_gaussiano(x1_Na, y1_Na, xerr1_Na, yerr1_Na, p0_1_Na, mostrarGrafica)
+parametros1_Na, errores1_Na, _, _ = ajustar_pico_gaussiano(x1_Na, y1_Na, xerr1_Na, yerr1_Na, p0_1_Na, False)
 
 # --- Ajuste del segundo pico ---
 x2_Na, y2_Na, xerr2_Na, yerr2_Na = cortar_datos(corte2_Na[0], corte2_Na[1], x_Na, y_Na, x_Na_err, y_Na_err)
-parametros2_Na, errores2_Na, _, _ = ajustar_pico_gaussiano(x2_Na, y2_Na, xerr2_Na, yerr2_Na, p0_2_Na, mostrarGrafica)
+parametros2_Na, errores2_Na, _, _ = ajustar_pico_gaussiano(x2_Na, y2_Na, xerr2_Na, yerr2_Na, p0_2_Na, False)
 
 
 #BARIO 
@@ -605,23 +701,23 @@ p0_3_Ba=[0, 185, 7, 4, 0, 0, 215, 7]
 
 # --- Ajuste del primer pico ---
 x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba = cortar_datos(corte1_Ba[0], corte1_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
-parametros1_Ba, errores1_Ba, _, _ = ajustar_pico_gaussiano(x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba, p0_1_Ba, mostrarGrafica)
+parametros1_Ba, errores1_Ba, _, _ = ajustar_pico_gaussiano(x1_Ba, y1_Ba, xerr1_Ba, yerr1_Ba, p0_1_Ba, False)
 
 # --- Ajuste del segundo pico ---
 x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba = cortar_datos(corte2_Ba[0], corte2_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
-parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, mostrarGrafica)
+parametros2_Ba, errores2_Ba, _, _ = ajustar_pico_gaussiano(x2_Ba, y2_Ba, xerr2_Ba, yerr2_Ba, p0_2_Ba, False)
 
 # --- Ajuste del tercer pico (doble) ---
 x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba = cortar_datos(corte3_Ba[0], corte3_Ba[1], x_Ba, y_Ba, x_Ba_err, y_Ba_err)
-parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano_doble(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, mostrarGrafica)
+parametros3_Ba, errores3_Ba, _, _ = ajustar_pico_gaussiano_doble(x3_Ba, y3_Ba, xerr3_Ba, yerr3_Ba, p0_3_Ba, False)
 
 
 Energia = [1173.2, 1330, 33, 662, 511, 1274, 33, 81, 356.014]
-errE_inventado = [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+errE = [0.000000000001,0.000000000001,0.000000000001,0.000000000001,0.000000000001,0.000000000001,0.000000000001,0.000000000001,0.000000000001]
 canal = [parametros1_Co[1], parametros1_Co[6], parametros1_Cs[1], parametros2_Cs[1], parametros1_Na[1], parametros2_Na[1], parametros1_Ba[1], parametros2_Ba[1], parametros3_Ba[6]] 
 errCanal = [errores1_Co[1], errores1_Co[6], errores1_Cs[1], errores2_Cs[1], errores1_Na[1], errores2_Na[1], errores1_Ba[1], errores2_Ba[1], errores3_Ba[6]]
 
-m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errE_inventado)
+m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errE)
 
 E_Co, errE_Co = calibrar(x_Co, x_Co_err, m, b, sm, sb)
 
@@ -631,7 +727,33 @@ E_Na, errE_Na = calibrar(x_Na, x_Na_err, m, b, sm, sb)
 
 E_Ba, errE_Ba = calibrar(x_Ba, x_Ba_err, m, b, sm, sb)
 
+graficar_con_error(E_Co, y_Co, errE_Co, y_Co_err, "Energia [keV]", "Cuentas")
 
+# graficar_con_error(E_Cs, y_Cs, errE_Cs, y_Cs_err, "Energia [keV]", "Cuentas")
+
+# graficar_con_error(E_Na, y_Na, errE_Na, y_Na_err, "Energia [keV]", "Cuentas")
+
+# graficar_con_error(E_Ba, y_Ba, errE_Ba, y_Ba_err, "Energia [keV]", "Cuentas")
+
+#PICOS DE AJUSTE DEFINITIVO
+
+#COBALTO 
+
+# --- Ajuste de los dos fotopicos ---
+E_corte_Co=[600, 900]
+E_p0_Co=[0, 1150, 7, 4, 0, 0, 1310, 7]
+
+E_x_Co, E_y_Co, E_xerr_Co, E_yerr_Co = cortar_datos(E_corte_Co[0], E_corte_Co[1], E_Co, y_Co, errE_Co, y_Co_err)
+E_parametros_Co, E_errores_Co, _, _ = ajustar_pico_gaussiano_doble(E_x_Co, E_y_Co, E_xerr_Co, E_yerr_Co, E_p0_Co, mostrarGrafica)
+
+# --- Ajuste de los dos bordes compton ---
+E_corte_Compton_Co=[400, 900]
+E_p0_Compton_Co=[500, 949, 8, 2, 703, 1158, 41, 609, 1315, -35] #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
+mostrarGraficaCompton = True
+nombre_archivoCompton_Co = "ComptonCo"
+
+E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(E_corte_Compton_Co[0], E_corte_Compton_Co[1], E_Co, y_Co, errE_Co, y_Co_err)
+parametros_Compton, errores_Compton, _, _ = ajustar_cobalto(E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, E_p0_Compton_Co, mostrarGraficaCompton, nombre_archivoCompton_Co)
 
 # def devolver_energia_cuentas(
 #     corte1=(13, 60),

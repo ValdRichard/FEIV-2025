@@ -183,6 +183,7 @@ def funcion_borde_compton(beta, x):
     beta[2] = sigma  (ancho)
     beta[3] = y0     (desplazamiento vertical)
     """
+    print(beta)
     A, xc, sigma, y0 = beta
     z = (x - xc) / (np.sqrt(2) * sigma)
     return A * (1 - erf(z)) + y0
@@ -497,7 +498,7 @@ def ajustar_cobalto(x_data, y_data,
     errores = output.sd_beta
 
     def borde_compton_ajustada(x):
-        return funcion_borde_compton(parametros, x)
+        return funcion_Cobalto(parametros, x)
 
     # # Calcular R²
     # y_pred = borde_compton_ajustada(x_data)

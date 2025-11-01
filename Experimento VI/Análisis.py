@@ -6,6 +6,68 @@ import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
 from scipy.special import erf
 
+def fit_lineal(x, y, err_x=None, err_y=None):
+    # Conversión a arrays
+    x = np.array(x, dtype=float)
+    y = np.array(y, dtype=float)
+
+    # Manejo de errores
+    if err_x is None:
+        err_x = np.zeros_like(x)
+    elif np.isscalar(err_x):
+        err_x = np.full_like(x, err_x, dtype=float)
+
+    if err_y is None:
+        err_y = np.zeros_like(y)
+    elif np.isscalar(err_y):
+        err_y = np.full_like(y, err_y, dtype=float)
+
+    # Modelo lineal
+    def f_lineal(beta, x):
+        m, b = beta
+        return m * x + b
+
+    modelo = Model(f_lineal)
+    data = RealData(x, y, sx=err_x, sy=err_y)
+    betai = [2.0, 0.0]
+
+    odr = ODR(data, modelo, beta0=betai)
+    out = odr.run()
+
+    # Parámetros ajustados
+    m, b = out.beta
+    sm, sb = out.sd_beta
+
+    # Predicción del modelo
+    y_pred = f_lineal(out.beta, x)
+
+    # Coeficiente de determinación R²
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    r2 = 1 - ss_res / ss_tot
+
+    plt.figure(figsize=(10,6))
+    plt.errorbar(x, y, xerr=err_x, yerr=err_y, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+    x_fit = np.linspace(np.min(x), np.max(x), 1000)
+    y_fit = f_lineal(out.beta, x_fit)
+        
+    plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste ODR\n'
+                        f'm={m:.2f}±{sm:.2f}\n'
+                        f'b={b:.2f}±{sb:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+    plt.xlabel('Canal')
+    plt.ylabel('Energía [keV]')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+    return m, sm, b, sb, r2
+
 def graficar(x, y, xlabel, ylabel):
     plt.figure(figsize=(8,5))
     plt.scatter(x, y, marker='.')
@@ -413,9 +475,9 @@ def ajustar_gaussiana_triple_odr(x_data, y_data,
                         f'A_2={parametros[3]:.2f}±{errores[3]:.2f}\n'
                         f'C_2={parametros[4]:.2f}±{errores[4]:.2f}\n'
                         f'σ_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
-                        f'A_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
-                        f'C_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
-                        f'σ_2={parametros[8]:.2f}±{errores[8]:.2f}\n'
+                        f'A_3={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'C_3={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'σ_3={parametros[8]:.2f}±{errores[8]:.2f}\n'
                         f'R²={r2:.4f}'))
         
         plt.xlabel('Canal')
@@ -432,6 +494,22 @@ def ajustar_gaussiana_triple_odr(x_data, y_data,
         plt.show()
     
     return parametros, errores, output, gaussiana_ajustada
+
+def calibrar(canal, sigma_canal, m, b, sm, sb):
+    
+    canal = np.array(canal, dtype=float)
+    E = m * canal + b
+
+    if sigma_canal is None:
+        sigma_canal = np.zeros_like(canal, dtype=float)
+    else:
+        if np.isscalar(sigma_canal):
+            sigma_canal = np.full_like(canal, float(sigma_canal))
+
+    # Propagación: derivadas: dE/dm = canal, dE/db = 1, dE/dcanal = m
+    # Var(E) ≈ (canal^2 * Var(m)) + Var(b) + (m^2 * Var(canal))
+    sigma_E = np.sqrt((canal**2) * (sm**2) + (sb**2) + (m**2) * (sigma_canal**2))
+    return E, sigma_E
 
 ruta = "./Experimento VI/Datos/"
 
@@ -455,26 +533,33 @@ graficar(x_Am, y_Am, "Canal", "Cuentas")
 #graficar_con_error(x_Am, y_Am, x_Am_err, y_Am_err, "Canales", "Cuentas")
 
 #Gaussianas para calibración inicial
-#La1
-corteLa1_Am=[367, 394]
-p0_La1_Am=[0,1,30,379,3]
-xLa1_Am, yLa1_Am, xerrLa1_Am, yerrLa1_Am = cortar_datos(corteLa1_Am[0], corteLa1_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
-parametrosLa1_Am, erroresLa1_Am, _, _ = ajustar_gaussiana_recta_odr(xLa1_Am, yLa1_Am, xerrLa1_Am, yerrLa1_Am, p0_La1_Am, False)
+#La
+corteLa_Am=[367, 394]
+p0_La_Am=[0,1,30,379,3]
+xLa_Am, yLa_Am, xerrLa_Am, yerrLa_Am = cortar_datos(corteLa_Am[0], corteLa_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
+parametrosLa_Am, erroresLa_Am, _, _ = ajustar_gaussiana_recta_odr(xLa_Am, yLa_Am, xerrLa_Am, yerrLa_Am, p0_La_Am, True)
 
 #Lb1 y Lb2
 corteLb_Am=[445, 500]
 p0_Lb_Am=[0,459,3,30,481,3]
 xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am = cortar_datos(corteLb_Am[0], corteLb_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
-parametrosLb_Am, erroresLb_Am, _, _ = ajustar_gaussiana_doble_odr(xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am, p0_Lb_Am, False)
+parametrosLb_Am, erroresLb_Am, _, _ = ajustar_gaussiana_doble_odr(xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am, p0_Lb_Am, True)
 
 #Ma
 corteMa_Am=[60, 120]
 p0_Ma_Am=[0,1,0,91,3]
 xMa_Am, yMa_Am, xerrMa_Am, yerrMa_Am = cortar_datos(corteMa_Am[0], corteMa_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
-parametrosMa_Am, erroresMa_Am, _, _ = ajustar_gaussiana_recta_odr(xMa_Am, yMa_Am, xerrMa_Am, yerrMa_Am, p0_Ma_Am, False)
+parametrosMa_Am, erroresMa_Am, _, _ = ajustar_gaussiana_recta_odr(xMa_Am, yMa_Am, xerrMa_Am, yerrMa_Am, p0_Ma_Am, True)
 
 #Lg
-corteLg_Am=[545, 587]
-p0_Lg_Am=[0,1,10,565,5]
+corteLg_Am=[553, 580]
+p0_Lg_Am=[0,1,24,564,3]
 xLg_Am, yLg_Am, xerrLg_Am, yerrLg_Am = cortar_datos(corteLg_Am[0], corteLg_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
 parametrosLg_Am, erroresLg_Am, _, _ = ajustar_gaussiana_recta_odr(xLg_Am, yLg_Am, xerrLg_Am, yerrLg_Am, p0_Lg_Am, True)
+
+E=[3.250,13.946,16.794,17.751,20.784]
+errE=[0.001,0.001,0.001,0.001,0.001]
+canal=[parametrosMa_Am[3],parametrosLa_Am[3],parametrosLb_Am[1],parametrosLb_Am[4],parametrosLg_Am[3]]
+errCanal=[erroresMa_Am[3],erroresLa_Am[3],erroresLb_Am[1],erroresLb_Am[4],erroresLg_Am[3]]
+
+fit_lineal(canal,E,errCanal,errE)

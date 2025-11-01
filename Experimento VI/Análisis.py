@@ -446,6 +446,8 @@ y_Am = df_Am["Cuentas"].values
 x_Am_err = np.full(len(x_Am), 1/2, dtype=float)
 y_Am_err = np.sqrt(y_Am)
 
+y_Am_err = np.sqrt(y_Am)
+y_Am_err[y_Am_err == 0] = 0.0001
 
 #ESPECTRO AMERICIO
 # --- Graficamos sin y con errores ---

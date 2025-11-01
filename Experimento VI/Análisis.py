@@ -60,7 +60,7 @@ def cortar_datos(izquierda, derecha, x, y, x_err, y_err):
     y_err = y_err[izquierda:derecha]
     return x_data, y_data, x_err, y_err
 
-def funcion_gaussiana(beta, x):
+def funcion_gaussiana_recta(beta, x):
     """
     Función gaussiana para ODR.
     beta[0] = pendiente
@@ -71,7 +71,16 @@ def funcion_gaussiana(beta, x):
     """
     return beta[0] * x + beta[1] + beta[2] * np.exp(-(x - beta[3])**2 / (2 * beta[4]**2))
 
-def funcion_gaussiana_doble(beta, x):
+def funcion_gaussiana(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud
+    beta[1] = media
+    beta[2] = sigma
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2))
+
+def funcion_gaussiana_doble_recta(beta, x):
     """
     Función gaussiana doble para ODR
     beta[0] = pendiente
@@ -83,6 +92,94 @@ def funcion_gaussiana_doble(beta, x):
     beta[6] = media 2
     beta[7] = sigma 2
     """
+    return beta[0] * x + beta[1] + beta[2] * np.exp(-(x - beta[3])**2 / (2 * beta[4]**2)) + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2))
+
+def funcion_gaussiana_doble(beta, x):
+    """
+    Función gaussiana doble para ODR
+    beta[0] = amplitud 1
+    beta[1] = media 1
+    beta[2] = sigma 1
+    beta[3] = amplitud 2
+    beta[4] = media 2
+    beta[5] = sigma 2
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * np.exp(-(x - beta[4])**2 / (2 * beta[5]**2))
+
+def funcion_gaussiana_triple(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud1
+    beta[1] = media1
+    beta[2] = sigma1
+    beta[3] = amplitud2
+    beta[4] = media2
+    beta[5] = sigma2
+    beta[6] = amplitud3
+    beta[7] = media3
+    beta[8] = sigma3
+    """
+    return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * np.exp(-(x - beta[4])**2 / (2 * beta[5]**2)) + beta[6] * np.exp(-(x - beta[7])**2 / (2 * beta[8]**2))
+
+def ajustar_gaussiana_recta_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_recta)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_recta(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'A={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'E={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'σ={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento VI/Imagenes/Gaussiana"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
 
 def ajustar_gaussiana_odr(x_data, y_data, 
                           x_err=None, y_err=None, 
@@ -124,9 +221,9 @@ def ajustar_gaussiana_odr(x_data, y_data,
         
         plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
                  label=(f'Ajuste gaussiana\n'
-                        f'A={parametros[2]:.2f}±{errores[2]:.2f}\n'
-                        f'E={parametros[3]:.2f}±{errores[3]:.2f}\n'
-                        f'σ={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
                         f'R²={r2:.4f}'))
         
         plt.xlabel('Energía [keV]')
@@ -136,6 +233,69 @@ def ajustar_gaussiana_odr(x_data, y_data,
 
         # 💾 Guardar imagen
         carpeta = "./Experimento VI/Imagenes/Gaussiana"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
+
+def ajustar_gaussiana_doble_recta_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana doble"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_doble_recta)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_doble_recta(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'A_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'C_1={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'σ_1={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'A_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'C_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Canal')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento VI/Imagenes/Gaussiana doble"
         os.makedirs(carpeta, exist_ok=True)
         ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
         plt.savefig(ruta_archivo, dpi=300)
@@ -184,12 +344,12 @@ def ajustar_gaussiana_doble_odr(x_data, y_data,
         
         plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
                  label=(f'Ajuste gaussiana\n'
-                        f'A_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
-                        f'C_1={parametros[3]:.2f}±{errores[3]:.2f}\n'
-                        f'σ_1={parametros[4]:.2f}±{errores[4]:.2f}\n'
-                        f'A_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
-                        f'C_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
-                        f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'A_1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'C_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'A_2={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'C_2={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σ_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
                         f'R²={r2:.4f}'))
         
         plt.xlabel('Canal')
@@ -207,6 +367,71 @@ def ajustar_gaussiana_doble_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
+def ajustar_gaussiana_triple_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana triple"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_triple)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_triple(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'A_1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'C_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'A_2={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'C_2={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σ_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'A_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'C_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'σ_2={parametros[8]:.2f}±{errores[8]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Canal')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento VI/Imagenes/Gaussiana triple"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
 
 ruta = "./Experimento VI/Datos/"
 
@@ -230,13 +455,24 @@ graficar(x_Am, y_Am, "Canal", "Cuentas")
 #Gaussianas para calibración inicial
 #La1
 corteLa1_Am=[367, 394]
-p0_La1_Am=[1,0,0,379,3]
+p0_La1_Am=[0,1,30,379,3]
 xLa1_Am, yLa1_Am, xerrLa1_Am, yerrLa1_Am = cortar_datos(corteLa1_Am[0], corteLa1_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
-parametrosLa1_Am, erroresLa1_Am, _, _ = ajustar_gaussiana_odr(xLa1_Am, yLa1_Am, xerrLa1_Am, yerrLa1_Am, p0_La1_Am, True)
+parametrosLa1_Am, erroresLa1_Am, _, _ = ajustar_gaussiana_recta_odr(xLa1_Am, yLa1_Am, xerrLa1_Am, yerrLa1_Am, p0_La1_Am, False)
 
 #Lb1 y Lb2
 corteLb_Am=[445, 500]
-p0_Lb_Am=[1,0,0,460,3,10,483,3]
+p0_Lb_Am=[0,459,3,30,481,3]
 xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am = cortar_datos(corteLb_Am[0], corteLb_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
-parametrosLb_Am, erroresLb_Am, _, _ = ajustar_gaussiana_doble_odr(xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am, p0_Lb_Am, True)
+parametrosLb_Am, erroresLb_Am, _, _ = ajustar_gaussiana_doble_odr(xLb_Am, yLb_Am, xerrLb_Am, yerrLb_Am, p0_Lb_Am, False)
 
+#Ma
+corteMa_Am=[60, 120]
+p0_Ma_Am=[0,1,0,91,3]
+xMa_Am, yMa_Am, xerrMa_Am, yerrMa_Am = cortar_datos(corteMa_Am[0], corteMa_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
+parametrosMa_Am, erroresMa_Am, _, _ = ajustar_gaussiana_recta_odr(xMa_Am, yMa_Am, xerrMa_Am, yerrMa_Am, p0_Ma_Am, False)
+
+#Lg
+corteLg_Am=[545, 587]
+p0_Lg_Am=[0,1,10,565,5]
+xLg_Am, yLg_Am, xerrLg_Am, yerrLg_Am = cortar_datos(corteLg_Am[0], corteLg_Am[1], x_Am, y_Am, x_Am_err, y_Am_err)
+parametrosLg_Am, erroresLg_Am, _, _ = ajustar_gaussiana_recta_odr(xLg_Am, yLg_Am, xerrLg_Am, yerrLg_Am, p0_Lg_Am, True)

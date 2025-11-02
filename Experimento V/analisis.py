@@ -77,8 +77,6 @@ def fit_lineal(x, y, err_x=None, err_y=None):
     return m, sm, b, sb
     # return m, sm, b, sb, chi2_red, r2
 
-
-
 def graficar(x, y, xlabel, ylabel):
     plt.figure(figsize=(8,5))
     plt.scatter(x, y, marker='.')
@@ -159,6 +157,20 @@ def funcion_gaussiana_doble(beta, x):
     """
     return beta[0] * np.exp(-(x - beta[1])**2 / (2 * beta[2]**2)) + beta[3] * x + beta[4] + beta[5] * np.exp(-(x - beta[6])**2 / (2 * beta[7]**2))
 
+def funcion_gaussiana_doble_bario(beta, x):
+    """
+    Función gaussiana para ODR.
+    beta[0] = amplitud 1
+    beta[1] = media 1
+    beta[2] = sigma 1
+    beta[3] = pendiente 
+    beta[4] = ordenada 
+    beta[5] = amplitud 2
+    beta[6] = media 2
+    beta[7] = sigma 2
+    """
+    return beta[0] * np.exp(-(x - 302.9)**2 / (2 * beta[1]**2)) + beta[2] * x + beta[3] + beta[4] * np.exp(-(x - 361)**2 / (2 * beta[5]**2))
+
 def funcion_gaussiana_CUADRUPLE(beta, x):
     """
     Función gaussiana para ODR.
@@ -188,7 +200,35 @@ def funcion_borde_compton(beta, x):
     z = (x - xc) / (np.sqrt(2) * sigma)
     return A * (1 - erf(z)) + y0
 
-def funcion_Cobalto(beta, x):
+def funcion_borde_compton_con_recta(beta, x):
+    """
+    Modelo del borde Compton (función tipo error con desplazamiento vertical).
+    
+    beta[0] = A      (amplitud)
+    beta[1] = xc     (posición del borde)
+    beta[2] = sigma  (ancho)
+    beta[3] = y0     (desplazamiento vertical)
+    """
+    print(beta)
+    A, xc, sigma, m, b= beta
+    z = (x - xc) / (np.sqrt(2) * sigma)
+    return A * (1 - erf(z)) + m*x + b
+
+def funcion_borde_compton_gauss_recta(beta, x):
+    """
+    Modelo del borde Compton (función tipo error con desplazamiento vertical).
+    
+    beta[0] = A      (amplitud)
+    beta[1] = xc     (posición del borde)
+    beta[2] = sigma  (ancho)
+    beta[3] = y0     (desplazamiento vertical)
+    """
+    print(beta)
+    A, xc, sigma, a, b, c, o= beta
+    z = (x - xc) / (np.sqrt(2) * sigma)
+    return A * (1 - erf(z)) + a * np.exp(-(x - b)**2 / (2 * c**2)) + o
+
+def funcion_Co_Ba(beta, x):
     """
     Modelo del borde Compton (función tipo error con desplazamiento vertical).
     
@@ -202,10 +242,29 @@ def funcion_Cobalto(beta, x):
     beta[7] = y0_2   (desplazamiento vertical)
     """
     #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
-    A, xc, sigma, y0, a, b, c, d, e, f, = beta
-    z = (x - xc) / (np.sqrt(2) * sigma)
-    return A * (1 - erf(z)) + y0 + a * np.exp(-(x - b)**2 / (2 * c**2)) + d * np.exp(-(x - e)**2 / (2 * (f)**2))
+    A, xc1, sigma1, B, xc2, sigma2, y0, a, b, c, d, e, f = beta
+    z1 = (x - xc1) / (np.sqrt(2) * sigma1)
+    z2 = (x - xc2) / (np.sqrt(2) * sigma2)
+    return A * (1 - erf(z1)) + B * (1 - erf(z2)) + a * np.exp(-(x - b)**2 / (2 * c**2)) + d * np.exp(-(x - e)**2 / (2 * (f)**2)) + y0
 
+def funcion_Ba(beta, x):
+    """
+    Modelo del borde Compton (función tipo error con desplazamiento vertical).
+    
+    beta[0] = A1     (amplitud)
+    beta[1] = xc1    (posición del borde)
+    beta[2] = sigma1 (ancho)
+    beta[3] = y0_1   (desplazamiento vertical)
+    beta[4] = A2     (amplitud)
+    beta[5] = xc2    (posición del borde)
+    beta[6] = sigma2 (ancho)
+    beta[7] = y0_2   (desplazamiento vertical)
+    """
+    #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
+    A, xc1, sigma1, B, xc2, sigma2, m, y0, a, b, c, d, e, f = beta
+    z1 = (x - xc1) / (np.sqrt(2) * sigma1)
+    z2 = (x - xc2) / (np.sqrt(2) * sigma2)
+    return A * (1 - erf(z1)) + B * (1 - erf(z2)) + a * np.exp(-(x - b)**2 / (2 * c**2)) + d * np.exp(-(x - e)**2 / (2 * (f)**2)) + m*x + y0
 
 def ajustar_borde_compton(x_data, y_data, 
                           x_err=None, y_err=None, 
@@ -261,6 +320,304 @@ def ajustar_borde_compton(x_data, y_data,
                         f'y0={parametros[3]:.2f}±{errores[3]:.2f}\n'
                         f'R²={r2:.4f}'))
         
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
+
+def ajustar_borde_compton_con_recta(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
+    """
+    Ajusta un borde Compton con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
+    """
+    if p0 is None:
+        A0 = np.max(y_data) - np.min(y_data)
+        xc0 = x_data[np.argmax(np.gradient(y_data))]
+        sigma0 = (np.max(x_data) - np.min(x_data)) / 20
+        y0 = np.min(y_data)
+        p0 = [A0, xc0, sigma0, y0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_borde_compton_con_recta)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_borde_compton_con_recta(parametros, x)
+
+    # Calcular R²
+    y_pred = borde_compton_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
+
+def ajustar_borde_compton_gauss_recta(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
+    """
+    Ajusta un borde Compton con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
+    """
+    if p0 is None:
+        A0 = np.max(y_data) - np.min(y_data)
+        xc0 = x_data[np.argmax(np.gradient(y_data))]
+        sigma0 = (np.max(x_data) - np.min(x_data)) / 20
+        y0 = np.min(y_data)
+        p0 = [A0, xc0, sigma0, y0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_borde_compton_gauss_recta)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_borde_compton_gauss_recta(parametros, x)
+
+    # Calcular R²
+    y_pred = borde_compton_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'Ac={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'Ec={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σc={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'Ag={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'Eg={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σg={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'b={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        #f'm={parametros[6]:.2f}±{errores[6]:.2f}\n'
+
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
+
+
+def ajustar_co_ba(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
+    """
+    Ajusta la suma de dos bordes Compton y una gaussiana con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
+    """
+    if p0 is None:
+        A01 = np.max(y_data) - np.min(y_data)
+        xc01 = x_data[np.argmax(np.gradient(y_data))]
+        sigma01 = (np.max(x_data) - np.min(x_data)) / 20
+        y01 = np.min(y_data)
+        a0 = a0
+        b0 = b0
+        c0 = c0
+        d0 = d0
+        f0 = f0
+        p0 = [A01, xc01, sigma01, y01, a0, b0, c0, d0, f0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_Co_Ba)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_Co_Ba(parametros, x)
+
+    # Calcular R²
+    y_pred = borde_compton_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'A1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'E1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'A2={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'E2={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σ2={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'y0={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'R²={r2:.4f}'))
+    
+        plt.xlabel('Energía [keV]')
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/BordeCompton"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+
+    return parametros, errores, output, borde_compton_ajustada
+
+def ajustar_ba(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="BordeCompton"):
+    """
+    Ajusta la suma de dos bordes Compton y una gaussiana con ODR usando la función tipo error + y0.
+    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
+    """
+    if p0 is None:
+        A01 = np.max(y_data) - np.min(y_data)
+        xc01 = x_data[np.argmax(np.gradient(y_data))]
+        sigma01 = (np.max(x_data) - np.min(x_data)) / 20
+        y01 = np.min(y_data)
+        a0 = a0
+        b0 = b0
+        c0 = c0
+        d0 = d0
+        f0 = f0
+        p0 = [A01, xc01, sigma01, y01, a0, b0, c0, d0, f0]
+
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+
+    modelo_compton = Model(funcion_Ba)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_compton, beta0=p0)
+    output = odr.run()
+
+    parametros = output.beta
+    errores = output.sd_beta
+
+    def borde_compton_ajustada(x):
+        return funcion_Ba(parametros, x)
+
+    # Calcular R²
+    y_pred = borde_compton_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = borde_compton_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Borde Compton ODR\n'
+                        f'A1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'E1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'σ1={parametros[2]:.2f}±{errores[2]:.2f}\n'
+                        f'A2={parametros[3]:.2f}±{errores[3]:.2f}\n'
+                        f'E2={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σ2={parametros[5]:.2f}±{errores[5]:.2f}\n'
+                        f'y0={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'R²={r2:.4f}'))
+    
         plt.xlabel('Energía [keV]')
         plt.ylabel('Cuentas')
         plt.legend()
@@ -377,11 +734,72 @@ def ajustar_gaussiana_doble_odr(x_data, y_data,
         plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
                  label=(f'Ajuste gaussiana\n'
                         f'A_1={parametros[0]:.2f}±{errores[0]:.2f}\n'
-                        f'C_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'E_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
                         f'σ_1={parametros[2]:.2f}±{errores[2]:.2f}\n'
                         f'A_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
-                        f'C_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
+                        f'E_2={parametros[6]:.2f}±{errores[6]:.2f}\n'
                         f'σ_2={parametros[7]:.2f}±{errores[7]:.2f}\n'
+                        f'R²={r2:.4f}'))
+        
+        plt.xlabel("Energía [keV]")
+        plt.ylabel('Cuentas')
+        plt.legend()
+        plt.grid(alpha=0.3)
+
+        # 💾 Guardar imagen
+        carpeta = "./Experimento V/Imagenes/Gaussiana doble"
+        os.makedirs(carpeta, exist_ok=True)
+        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
+        plt.savefig(ruta_archivo, dpi=300)
+
+        plt.show()
+    
+    return parametros, errores, output, gaussiana_ajustada
+
+def ajustar_gaussiana_doble_bario_odr(x_data, y_data, 
+                          x_err=None, y_err=None, 
+                          p0=None, mostrar_grafica=True,
+                          nombre_archivo="Gaussiana doble"):
+    if p0 is None:
+        p0 = [np.max(y_data), np.mean(x_data), np.std(x_data)]
+    
+    if x_err is None:
+        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
+    if y_err is None:
+        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
+    
+    modelo_gauss = Model(funcion_gaussiana_doble_bario)
+    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
+    odr = ODR(datos_odr, modelo_gauss, beta0=p0)
+    output = odr.run()
+    
+    parametros = output.beta
+    errores = output.sd_beta
+    
+    def gaussiana_ajustada(x):
+        return funcion_gaussiana_doble_bario(parametros, x)
+    
+    # Calcular R²
+    y_pred = gaussiana_ajustada(x_data)
+    ss_res = np.sum((y_data - y_pred)**2)
+    ss_tot = np.sum((y_data - np.mean(y_data))**2)
+    r2 = 1 - ss_res/ss_tot
+    
+    if mostrar_grafica:
+        plt.figure(figsize=(10,6))
+        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
+                     fmt='o', alpha=0.5, label='Datos', 
+                     color='orange', capsize=3)
+        
+        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
+        y_fit = gaussiana_ajustada(x_fit)
+        
+        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+                 label=(f'Ajuste gaussiana\n'
+                        f'A_1={parametros[0]:.2f}±{errores[0]:.2f}\n'
+                        f'σ_1={parametros[1]:.2f}±{errores[1]:.2f}\n'
+                        f'A_2={parametros[4]:.2f}±{errores[4]:.2f}\n'
+                        f'σ_2={parametros[5]:.2f}±{errores[5]:.2f}\n'
                         f'R²={r2:.4f}'))
         
         plt.xlabel("Energía [keV]")
@@ -464,80 +882,6 @@ def ajustar_gaussiana_cuadruple_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
-def ajustar_cobalto(x_data, y_data, 
-                          x_err=None, y_err=None, 
-                          p0=None, mostrar_grafica=True,
-                          nombre_archivo="BordeCompton"):
-    """
-    Ajusta la suma de dos bordes Compton y una gaussiana con ODR usando la función tipo error + y0.
-    Guarda la imagen si mostrar_grafica=True en Imagenes/BordeCompton.
-    """
-    if p0 is None:
-        A01 = np.max(y_data) - np.min(y_data)
-        xc01 = x_data[np.argmax(np.gradient(y_data))]
-        sigma01 = (np.max(x_data) - np.min(x_data)) / 20
-        y01 = np.min(y_data)
-        a0 = a0
-        b0 = b0
-        c0 = c0
-        d0 = d0
-        f0 = f0
-        p0 = [A01, xc01, sigma01, y01, a0, b0, c0, d0, f0]
-
-    if x_err is None:
-        x_err = np.ones_like(x_data) * 0.01 * np.ptp(x_data)
-    if y_err is None:
-        y_err = np.ones_like(y_data) * 0.01 * np.ptp(y_data)
-
-    modelo_compton = Model(funcion_Cobalto)
-    datos_odr = RealData(x_data, y_data, sx=x_err, sy=y_err)
-    odr = ODR(datos_odr, modelo_compton, beta0=p0)
-    output = odr.run()
-
-    parametros = output.beta
-    errores = output.sd_beta
-
-    def borde_compton_ajustada(x):
-        return funcion_Cobalto(parametros, x)
-
-    # # Calcular R²
-    # y_pred = borde_compton_ajustada(x_data)
-    # ss_res = np.sum((y_data - y_pred)**2)
-    # ss_tot = np.sum((y_data - np.mean(y_data))**2)
-    # r2 = 1 - ss_res/ss_tot
-
-    if mostrar_grafica:
-        plt.figure(figsize=(10,6))
-        plt.errorbar(x_data, y_data, xerr=x_err, yerr=y_err, 
-                     fmt='o', alpha=0.5, label='Datos', 
-                     color='orange', capsize=3)
-        
-        x_fit = np.linspace(np.min(x_data), np.max(x_data), 1000)
-        y_fit = borde_compton_ajustada(x_fit)
-        
-        plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
-                 label=(f'Borde Compton ODR\n'
-                        f'A={parametros[0]:.2f}±{errores[0]:.2f}\n'
-                        f'E={parametros[1]:.2f}±{errores[1]:.2f}\n'
-                        f'σ={parametros[2]:.2f}±{errores[2]:.2f}\n'
-                        f'y0={parametros[3]:.2f}±{errores[3]:.2f}\n')
-                        )
-    
-        plt.xlabel('Energía [keV]')
-        plt.ylabel('Cuentas')
-        plt.legend()
-        plt.grid(alpha=0.3)
-
-        # 💾 Guardar imagen
-        carpeta = "./Experimento V/Imagenes/BordeCompton"
-        os.makedirs(carpeta, exist_ok=True)
-        ruta_archivo = f"{carpeta}/{nombre_archivo}.png"
-        plt.savefig(ruta_archivo, dpi=300)
-
-        plt.show()
-
-    return parametros, errores, output, borde_compton_ajustada
-
 def calibrar(canal, sigma_canal, m, b, sm, sb):
     
     canal = np.array(canal, dtype=float)
@@ -576,6 +920,12 @@ def ajustar_pico_gaussiano_doble(x_data, y_data, x_err, y_err, p0, mostrarGrafic
     )
     return parametros, errores, output, gauss_ajustada
 
+def ajustar_pico_gaussiano_doble_bario(x_data, y_data, x_err, y_err, p0, mostrarGrafica, nombre_archivo = 'None'):
+    """Ajusta un pico gaussiano doble con ODR"""
+    parametros, errores, output, gauss_ajustada = ajustar_gaussiana_doble_bario_odr(
+        x_data, y_data, x_err, y_err, p0=p0, mostrar_grafica=mostrarGrafica, nombre_archivo = nombre_archivo
+    )
+    return parametros, errores, output, gauss_ajustada
 
 def ajustar_pico_gaussiano_CUADRUPLE(x_data, y_data, x_err, y_err, p0, mostrarGrafica, nombre_archivo = 'None'):
     """Ajusta un pico gaussiano doble con ODR"""
@@ -728,17 +1078,17 @@ E_Na, errE_Na = calibrar(x_Na, x_Na_err, m, b, sm, sb)
 
 E_Ba, errE_Ba = calibrar(x_Ba, x_Ba_err, m, b, sm, sb)
 
-graficar_con_error(E_Co, y_Co, errE_Co, y_Co_err, "Energia [keV]", "Cuentas")
+# graficar_con_error(E_Co, y_Co, errE_Co, y_Co_err, "Energia [keV]", "Cuentas")
 
 # graficar_con_error(E_Cs, y_Cs, errE_Cs, y_Cs_err, "Energia [keV]", "Cuentas")
 
 # graficar_con_error(E_Na, y_Na, errE_Na, y_Na_err, "Energia [keV]", "Cuentas")
 
-# graficar_con_error(E_Ba, y_Ba, errE_Ba, y_Ba_err, "Energia [keV]", "Cuentas")
+graficar_con_error(E_Ba, y_Ba, errE_Ba, y_Ba_err, "Energia [keV]", "Cuentas")
 
 #PICOS DE AJUSTE DEFINITIVO
 
-#COBALTO 
+#COBALTO -------------------------------------------------
 
 # --- Ajuste de los dos fotopicos ---
 E_corte_Co=[600, 900]
@@ -748,13 +1098,73 @@ E_x_Co, E_y_Co, E_xerr_Co, E_yerr_Co = cortar_datos(E_corte_Co[0], E_corte_Co[1]
 E_parametros_Co, E_errores_Co, _, _ = ajustar_pico_gaussiano_doble(E_x_Co, E_y_Co, E_xerr_Co, E_yerr_Co, E_p0_Co, mostrarGrafica)
 
 # --- Ajuste de los dos bordes compton ---
-E_corte_Compton_Co=[400, 900]
-E_p0_Compton_Co=[500, 949, 8, 2, 703, 1158, 41, 609, 1315, -35] #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
-mostrarGraficaCompton = True
+E_corte_Compton_Co=[500, 900]
+E_p0_Compton_Co=[77, 954.94, 26.84, 300, 1101, 8, 2, 703.30, 1158.63, 41.73, 609.29, 1315.35, -35.26] #703.30 * np.exp(-(x - 1158.63)**2 / (2 * 41.73**2)) + 609.29 * np.exp(-(x - 1315.35)**2 / (2 * (-35.26)**2))
 nombre_archivoCompton_Co = "ComptonCo"
 
-E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(E_corte_Compton_Co[0], E_corte_Compton_Co[1], E_Co, y_Co, errE_Co, y_Co_err)
-parametros_Compton, errores_Compton, _, _ = ajustar_cobalto(E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, E_p0_Compton_Co, mostrarGraficaCompton, nombre_archivoCompton_Co)
+E_Compton_Co, Cuentas_Compton_Co, errE_Compton_Co, errCuentas_Compton_Co = cortar_datos(E_corte_Compton_Co[0], E_corte_Compton_Co[1], E_Co, y_Co, errE_Co, y_Co_err)
+parametros_Compton_Co, errores_Compton_Co, _, _ = ajustar_co_ba(E_Compton_Co, Cuentas_Compton_Co, errE_Compton_Co, errCuentas_Compton_Co, E_p0_Compton_Co, True, nombre_archivoCompton_Co)
+
+#CESIO -------------------------------------------------
+
+# --- Ajuste del borde compton ---
+E_corte_Compton_Cs=[220, 320]
+E_p0_Compton_Cs=[913, 480, 25, 447]
+nombre_archivoCompton_Cs = "ComptonCs"
+
+E_Compton_Cs, Cuentas_Compton_Cs, errE_Compton_Cs, errCuentas_Compton_Cs = cortar_datos(E_corte_Compton_Cs[0], E_corte_Compton_Cs[1], E_Cs, y_Cs, errE_Cs, y_Cs_err)
+parametros_Compton_Cs, errores_Compton_Cs, _, _ = ajustar_borde_compton(E_Compton_Cs, Cuentas_Compton_Cs, errE_Compton_Cs, errCuentas_Compton_Cs, E_p0_Compton_Cs, True, nombre_archivoCompton_Cs)
+
+# --- Ajuste del fotopico ---
+E_corte_Cs=[310, 490]
+E_p0_Cs=[500, 662, 2, -1, 1]
+
+E_x_Cs, E_y_Cs, E_xerr_Cs, E_yerr_Cs = cortar_datos(E_corte_Cs[0], E_corte_Cs[1], E_Cs, y_Cs, errE_Cs, y_Cs_err)
+E_parametros_Cs, E_errores_Cs, _, _ = ajustar_pico_gaussiano(E_x_Cs, E_y_Cs, E_xerr_Cs, E_yerr_Cs, E_p0_Cs, mostrarGrafica)
+
+#SODIO -------------------------------------------------
+
+# --- Ajuste del primer borde compton ---
+E_corte1_Compton_Na=[170, 260]
+E_p01_Compton_Na=[613, 300, 50, -1, 1]
+nombre_archivoCompton1_Na = "ComptonNa1"
+
+E_Compton1_Na, Cuentas_Compton1_Na, errE_Compton1_Na, errCuentas_Compton1_Na = cortar_datos(E_corte1_Compton_Na[0], E_corte1_Compton_Na[1], E_Na, y_Na, errE_Na, y_Na_err)
+parametros_Compton1_Na, errores_Compton1_Na, _, _ = ajustar_borde_compton_con_recta(E_Compton1_Na, Cuentas_Compton1_Na, errE_Compton1_Na, errCuentas_Compton1_Na, E_p01_Compton_Na, True, nombre_archivoCompton1_Na)
+
+# --- Ajuste del fotopico respectivo---
+E_corte1_Na=[210, 490]
+E_p01_Na=[500, 510, 2, -1, 1]
+
+E_x1_Na, E_y1_Na, E_xerr1_Na, E_yerr1_Na = cortar_datos(E_corte1_Na[0], E_corte1_Na[1], E_Na, y_Na, errE_Na, y_Na_err)
+E_parametros_Na, E_errores_Na, _, _ = ajustar_pico_gaussiano(E_x1_Na, E_y1_Na, E_xerr1_Na, E_yerr1_Na, E_p01_Na, mostrarGrafica)
+
+# --- Ajuste del segundo borde compton ---
+E_corte2_Compton_Na=[550, 850] #E_corte2_Compton_Na=[500, 850]
+E_p02_Compton_Na=[100, 1050, 50, 176, 1274, 50, 1] #E_p02_Compton_Na=[100, 1050, 50, 176, 1274, 50, 1, 1]
+nombre_archivoCompton2_Na = "ComptonNa2"
+
+E_Compton2_Na, Cuentas_Compton2_Na, errE_Compton2_Na, errCuentas_Compton2_Na = cortar_datos(E_corte2_Compton_Na[0], E_corte2_Compton_Na[1], E_Na, y_Na, errE_Na, y_Na_err)
+parametros_Compton2_Na, errores_Compton2_Na, _, _ = ajustar_borde_compton_gauss_recta(E_Compton2_Na, Cuentas_Compton2_Na, errE_Compton2_Na, errCuentas_Compton2_Na, E_p02_Compton_Na, True, nombre_archivoCompton2_Na)
+
+#BARIO -------------------------------------------------
+
+# --- Ajuste del primer borde compton ---
+E_corte1_Compton_Ba=[130, 270]
+E_p01_Compton_Ba=[3000, 302.9, 19, -1, 1, 10000, 361, 23]
+nombre_archivoCompton1_Ba = "ComptonBa1"
+
+E_Compton1_Ba, Cuentas_Compton1_Ba, errE_Compton1_Ba, errCuentas_Compton1_Ba = cortar_datos(E_corte1_Compton_Ba[0], E_corte1_Compton_Ba[1], E_Ba, y_Ba, errE_Ba, y_Ba_err)
+parametros_Compton1_Ba, errores_Compton1_Ba, _, _ = ajustar_pico_gaussiano_doble(E_Compton1_Ba, Cuentas_Compton1_Ba, errE_Compton1_Ba, errCuentas_Compton1_Ba, E_p01_Compton_Ba, True, nombre_archivoCompton1_Ba)
+
+# --- Ajuste del segundo borde compton ---
+E_corte2_Compton_Ba=[90, 270] 
+E_p02_Compton_Ba=[300,161.717, 2, 500, 213.079, 1, -1, 1, 3658.22, 299.62, 18.66, 10030.22, 363.04, 24.82] 
+nombre_archivoCompton2_Ba = "ComptonBa2"
+
+E_Compton2_Ba, Cuentas_Compton2_Ba, errE_Compton2_Ba, errCuentas_Compton2_Ba = cortar_datos(E_corte2_Compton_Ba[0], E_corte2_Compton_Ba[1], E_Ba, y_Ba, errE_Ba, y_Ba_err)
+parametros_Compton2_Ba, errores_Compton2_Ba, _, _ = ajustar_ba(E_Compton2_Ba, Cuentas_Compton2_Ba, errE_Compton2_Ba, errCuentas_Compton2_Ba, E_p02_Compton_Ba, True, nombre_archivoCompton2_Ba)
+
 
 # def devolver_energia_cuentas(
 #     corte1=(13, 60),

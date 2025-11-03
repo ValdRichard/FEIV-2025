@@ -731,14 +731,12 @@ x_Am_calibrado_err = np.sqrt(x_Am_calibrado**2 * sm**2 + m**2 * x_Am_err**2 + sb
 #graficar_con_error(x_Am_calibrado, y_Am, x_Am_calibrado_err, y_Am_err, "Energía [keV]", "Cuentas")
 
 #Análisis
-#Ag
-
 archivos = ["Ag.spe","Co.spe","Cr.spe","Cu.spe","Fe.spe","Mn.spe","Mo.spe","Nb.spe","Pb.spe","Pd.spe","Ru.spe","Se.spe","Sn.spe","W.spe","Zn.spe","Zr.spe"]
 titulos = ["Ag","Co","Cr","Cu","Fe","Mn","Mo","Nb","Pb","Pd","Ru","Se","Sn","W","Zn","Zr"]
 for j,i in enumerate(archivos) : 
     df = leer_spe( ruta, i) 
-    print(df)
     df["Energía"] = df["Canal"] * m + b
+    x0 = df["Canal"].values
     x = df["Energía"].values
     y = df["Cuentas"].values
 
@@ -747,7 +745,25 @@ for j,i in enumerate(archivos) :
     y_err[y_err == 0] = 0.0001
 
     if j==0:
-        graficar_con_error(x,y,x_err,y_err,"Energía","Cuentas",titulos[j])
-        corte=[770,810]
-        p0=[0,790,3]
+        #graficar(x0,y,"Canales","Cuentas")
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        
+        corteLa_Ag=[362, 395]
+        p0_La_Ag=[0,1,375,13.909,0.1]
+        xLa_Ag, yLa_Ag, xerrLa_Ag, yerrLa_Ag = cortar_datos(corteLa_Ag[0], corteLa_Ag[1], x, y, x_err, y_err)
+        parametrosLa_Ag, erroresLa_Ag, _, _ = ajustar_gaussiana_recta_odr(xLa_Ag, yLa_Ag, xerrLa_Ag, yerrLa_Ag, p0_La_Ag, False)
+        #13.92(2) keV (La1 del Np)
+
+    elif j==8:
+        #graficar(x0,y,"Canales","Cuentas")
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+
+        corteLa_Pb=[273, 299]
+        p0_La_Pb=[0,1,12,10.551,0.01]
+        xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb = cortar_datos(corteLa_Pb[0], corteLa_Pb[1], x, y, x_err, y_err)
+        parametrosLa_Pb, erroresLa_Pb, _, _ = ajustar_gaussiana_recta_odr(xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb, p0_La_Pb, True,"Pb")
+
+        
+
+
 

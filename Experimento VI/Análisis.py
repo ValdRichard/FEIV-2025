@@ -740,19 +740,40 @@ for j,i in enumerate(archivos) :
     x = df["Energía"].values
     y = df["Cuentas"].values
 
-    x_err = np.full(len(x), 1/2, dtype=float)
+    x0_err = np.full(len(x), 1/2, dtype=float)
+    x_err = np.sqrt( (m * x0_err)**2 + (x0 * sm)**2 + sb**2 )
     y_err = np.sqrt(y)
     y_err[y_err == 0] = 0.0001
 
     if j==0:
-        #graficar(x0,y,"Canales","Cuentas")
-        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        graficar(x0,y,"Canales","Cuentas")
         
         corteLa_Ag=[362, 395]
-        p0_La_Ag=[0,1,375,13.909,0.1]
+        p0_La_Ag=[0,1,270,13.909,0.2]
         xLa_Ag, yLa_Ag, xerrLa_Ag, yerrLa_Ag = cortar_datos(corteLa_Ag[0], corteLa_Ag[1], x, y, x_err, y_err)
         parametrosLa_Ag, erroresLa_Ag, _, _ = ajustar_gaussiana_recta_odr(xLa_Ag, yLa_Ag, xerrLa_Ag, yerrLa_Ag, p0_La_Ag, False)
-        #13.92(2) keV (La1 del Np)
+        #13.91(1) keV (La1 del Np)
+    
+        corteKa_Ag=[582,619]
+        p0_Ka_Ag=[0,1,760,22.163,0.2]
+        xKa_Ag, yKa_Ag, xerrKa_Ag, yerrKa_Ag = cortar_datos(corteKa_Ag[0], corteKa_Ag[1], x, y, x_err, y_err)
+        parametrosKa_Ag, erroresKa_Ag, _, _ = ajustar_gaussiana_recta_odr(xKa_Ag, yKa_Ag, xerrKa_Ag, yerrKa_Ag, p0_Ka_Ag, False)
+        #22.12(2) keV (Ka1 del Ag)
+
+        corteKb_Ag=[666,691]
+        p0_Kb_Ag=[0,1,200,24.959,0.2]
+        xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag = cortar_datos(corteKb_Ag[0], corteKb_Ag[1], x, y, x_err, y_err)
+        parametrosKb_Ag, erroresKb_Ag, _, _ = ajustar_gaussiana_recta_odr(xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag, p0_Kb_Ag, False)
+        #24.95(1) keV (Kb1 del Ag)
+
+        corteLb_Ag=[71,104]
+        p0_Lb_Ag=[0,1,50,3.255,0.2]
+        xLb_Ag, yLb_Ag, xerrLb_Ag, yerrLb_Ag = cortar_datos(corteLb_Ag[0], corteLb_Ag[1], x, y, x_err, y_err)
+        parametrosLb_Ag, erroresLb_Ag, _, _ = ajustar_gaussiana_recta_odr(xLb_Ag, yLb_Ag, xerrLb_Ag, yerrLb_Ag, p0_Lb_Ag, False)
+        #3.22(2) keV (Lb3 del Ag)
+    
+
 
     elif j==8:
         #graficar(x0,y,"Canales","Cuentas")
@@ -761,7 +782,7 @@ for j,i in enumerate(archivos) :
         corteLa_Pb=[273, 299]
         p0_La_Pb=[0,1,12,10.551,0.01]
         xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb = cortar_datos(corteLa_Pb[0], corteLa_Pb[1], x, y, x_err, y_err)
-        parametrosLa_Pb, erroresLa_Pb, _, _ = ajustar_gaussiana_recta_odr(xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb, p0_La_Pb, True,"Pb")
+        parametrosLa_Pb, erroresLa_Pb, _, _ = ajustar_gaussiana_recta_odr(xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb, p0_La_Pb, False,"Pb")
 
         
 

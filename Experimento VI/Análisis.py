@@ -783,6 +783,12 @@ for j,i in enumerate(archivos) :
         parametrosK_Co, erroresK_Co, _, _ = ajustar_gaussiana_triple_odr(xK_Co, yK_Co, xerrK_Co, yerrK_Co, p0_K_Co, False)
         #6.85(1) keV, 7.42(1) keV y 7.71(1) keV (??? del Co)
 
+        corteKb_Co=[212,234]
+        p0_Kb_Co=[0,1,20,8.155,0.1]
+        xKb_Co, yKb_Co, xerrKb_Co, yerrKb_Co = cortar_datos(corteKb_Co[0], corteKb_Co[1], x, y, x_err, y_err)
+        parametrosKb_Co, erroresKb_Co, _, _ = ajustar_gaussiana_recta_odr(xKb_Co, yKb_Co, xerrKb_Co, yerrKb_Co, p0_Kb_Co, False)
+        #8.14(2) keV (??? del Co)
+
     elif j==2:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")        
@@ -802,6 +808,48 @@ for j,i in enumerate(archivos) :
         xKa_Cu, yKa_Cu, xerrKa_Cu, yerrKa_Cu = cortar_datos(corteKa_Cu[0], corteKa_Cu[1], x, y, x_err, y_err)
         parametrosKa_Cu, erroresKa_Cu, _, _ = ajustar_gaussiana_doble_odr(xKa_Cu, yKa_Cu, xerrKa_Cu, yerrKa_Cu, p0_Ka_Cu, False)
         #7.92(1) keV (Ka3 del Cu)  
+
+    elif j==4:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+
+        corteKb_Fe=[182,216]
+        p0_Kb_Fe=[0,1,17,6.994,0.1,30,7.417,0.1]
+        xKb_Fe, yKb_Fe, xerrKb_Fe, yerrKb_Fe = cortar_datos(corteKb_Fe[0], corteKb_Fe[1], x, y, x_err, y_err)
+        parametrosKb_Fe, erroresKb_Fe, _, _ = ajustar_gaussiana_doble_recta_odr(xKb_Fe, yKb_Fe, xerrKb_Fe, yerrKb_Fe, p0_Kb_Fe, False)
+        #6.97(2) keV y 7.44(2) keV (??? del Fe)
+
+        corteKa_Fe=[157,185]
+        p0_Ka_Fe=[0,1,65,6.345,0.1]
+        xKa_Fe, yKa_Fe, xerrKa_Fe, yerrKa_Fe = cortar_datos(corteKa_Fe[0], corteKa_Fe[1], x, y, x_err, y_err)
+        parametrosKa_Fe, erroresKa_Fe, _, _ = ajustar_gaussiana_recta_odr(xKa_Fe, yKa_Fe, xerrKa_Fe, yerrKa_Fe, p0_Ka_Fe, False)
+        #6.34(1) keV (Ka1 del Fe)
+
+    elif j==5:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+
+        corteKa_Mn=[143,184]
+        p0_Ka_Mn=[0,1,60,5.798,0.1,18,6.423,0.1]
+        xKa_Mn, yKa_Mn, xerrKa_Mn, yerrKa_Mn = cortar_datos(corteKa_Mn[0], corteKa_Mn[1], x, y, x_err, y_err)
+        parametrosKa_Mn, erroresKa_Mn, _, _ = ajustar_gaussiana_doble_recta_odr(xKa_Mn, yKa_Mn, xerrKa_Mn, yerrKa_Mn, p0_Ka_Mn, False)
+        #5.89(1) keV y 6.44(!) (Ka1 y ??? del Mn)
+
+    elif j==6:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+
+        corteKa_Mo=[457,491]
+        p0_Ka_Mo=[0,1,90,17.440,0.03]
+        xKa_Mo, yKa_Mo, xerrKa_Mo, yerrKa_Mo = cortar_datos(corteKa_Mo[0], corteKa_Mo[1], x, y, x_err, y_err)
+        parametrosKa_Mo, erroresKa_Mo, _, _ = ajustar_gaussiana_recta_odr(xKa_Mo, yKa_Mo, xerrKa_Mo, yerrKa_Mo, p0_Ka_Mo, False)
+        #17.46(2) keV (Ka1 del Mo)
+
+        corteKb_Mo=[515,562]
+        p0_Kb_Mo=[0,3,5,19.606,0.2]
+        xKb_Mo, yKb_Mo, xerrKb_Mo, yerrKb_Mo = cortar_datos(corteKb_Mo[0], corteKb_Mo[1], x, y, x_err, y_err)
+        parametrosKb_Mo, erroresKb_Mo, _, _ = ajustar_gaussiana_recta_odr(xKb_Mo, yKb_Mo, xerrKb_Mo, yerrKb_Mo, p0_Kb_Mo, False)
+        #19.66(3) keV (Kb1 del Mo)
 
     elif j==8:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
@@ -837,6 +885,18 @@ for j,i in enumerate(archivos) :
         parametrosMa_Pb, erroresMa_Pb, _, _ = ajustar_gaussiana_recta_odr(xMa_Pb, yMa_Pb, xerrMa_Pb, yerrMa_Pb, p0_Ma_Pb, False)
         #2.30(1) keV (Ma del Pb)
 
+    if j==11:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+    
+        corteKa_Se=[292, 318]
+        p0_Ka_Se=[0,1,400,11.224,0.1]
+        xKa_Se, yKa_Se, xerrKa_Se, yerrKa_Se = cortar_datos(corteKa_Se[0], corteKa_Se[1], x, y, x_err, y_err)
+        parametrosKa_Se, erroresKa_Se, _, _ = ajustar_gaussiana_recta_odr(xKa_Se, yKa_Se, xerrKa_Se, yerrKa_Se, p0_Ka_Se, False)
+        #11.20(1) keV (La1 del Se)
 
-
-
+        corteKb_Se=[333, 349]
+        p0_Kb_Se=[0,1,200,12.497,0.1]
+        xKb_Se, yKb_Se, xerrKb_Se, yerrKb_Se = cortar_datos(corteKb_Se[0], corteKb_Se[1], x, y, x_err, y_err)
+        parametrosKb_Se, erroresKb_Se, _, _ = ajustar_gaussiana_recta_odr(xKb_Se, yKb_Se, xerrKb_Se, yerrKb_Se, p0_Kb_Se, False)
+        #12.47(2) keV (Lb1 del Se)

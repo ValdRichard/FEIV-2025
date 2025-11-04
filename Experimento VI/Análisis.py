@@ -746,8 +746,8 @@ for j,i in enumerate(archivos) :
     y_err[y_err == 0] = 0.0001
 
     if j==0:
-        graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
-        graficar(x0,y,"Canales","Cuentas")
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
         
         corteLa_Ag=[362, 395]
         p0_La_Ag=[0,1,270,13.909,0.2]
@@ -761,30 +761,82 @@ for j,i in enumerate(archivos) :
         parametrosKa_Ag, erroresKa_Ag, _, _ = ajustar_gaussiana_recta_odr(xKa_Ag, yKa_Ag, xerrKa_Ag, yerrKa_Ag, p0_Ka_Ag, False)
         #22.12(2) keV (Ka1 del Ag)
 
-        corteKb_Ag=[666,691]
-        p0_Kb_Ag=[0,1,200,24.959,0.2]
-        xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag = cortar_datos(corteKb_Ag[0], corteKb_Ag[1], x, y, x_err, y_err)
-        parametrosKb_Ag, erroresKb_Ag, _, _ = ajustar_gaussiana_recta_odr(xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag, p0_Kb_Ag, False)
-        #24.95(1) keV (Kb1 del Ag)
-
         corteLb_Ag=[71,104]
         p0_Lb_Ag=[0,1,50,3.255,0.2]
         xLb_Ag, yLb_Ag, xerrLb_Ag, yerrLb_Ag = cortar_datos(corteLb_Ag[0], corteLb_Ag[1], x, y, x_err, y_err)
         parametrosLb_Ag, erroresLb_Ag, _, _ = ajustar_gaussiana_recta_odr(xLb_Ag, yLb_Ag, xerrLb_Ag, yerrLb_Ag, p0_Lb_Ag, False)
         #3.22(2) keV (Lb3 del Ag)
-    
 
+        corteKb_Ag=[666,700]
+        p0_Kb_Ag=[200,24.941,0.2,50,25.4503,0.1]
+        xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag = cortar_datos(corteKb_Ag[0], corteKb_Ag[1], x, y, x_err, y_err)
+        parametrosKb_Ag, erroresKb_Ag, _, _ = ajustar_gaussiana_doble_odr(xKb_Ag, yKb_Ag, xerrKb_Ag, yerrKb_Ag, p0_Kb_Ag, False)
+        #24.97(2) keV y 25.52(8) keV (Kb1 y Kb2 del Ag)
+
+    elif j==1:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+
+        corteK_Co=[179, 214]
+        p0_K_Co=[8000,6.915,0.1,8000,7.400,0.1,2000,7.649,0.1]
+        xK_Co, yK_Co, xerrK_Co, yerrK_Co = cortar_datos(corteK_Co[0], corteK_Co[1], x, y, x_err, y_err)
+        parametrosK_Co, erroresK_Co, _, _ = ajustar_gaussiana_triple_odr(xK_Co, yK_Co, xerrK_Co, yerrK_Co, p0_K_Co, False)
+        #6.85(1) keV, 7.42(1) keV y 7.71(1) keV (??? del Co)
+
+    elif j==2:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")        
+
+        corteKa_Cr=[135, 157]
+        p0_Ka_Cr=[0,1,8000,5.4052,0.1]
+        xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr = cortar_datos(corteKa_Cr[0], corteKa_Cr[1], x, y, x_err, y_err)
+        parametrosKa_Cr, erroresKa_Cr, _, _ = ajustar_gaussiana_recta_odr(xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr, p0_Ka_Cr, False)
+        #5.37(2) keV (Ka2 del Cr)
+
+    elif j==3:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")   
+
+        corteKa_Cu=[188,227]
+        p0_Ka_Cu=[200,7.400,0.2,1000,7.882,0.1]
+        xKa_Cu, yKa_Cu, xerrKa_Cu, yerrKa_Cu = cortar_datos(corteKa_Cu[0], corteKa_Cu[1], x, y, x_err, y_err)
+        parametrosKa_Cu, erroresKa_Cu, _, _ = ajustar_gaussiana_doble_odr(xKa_Cu, yKa_Cu, xerrKa_Cu, yerrKa_Cu, p0_Ka_Cu, False)
+        #7.92(1) keV (Ka3 del Cu)  
 
     elif j==8:
-        #graficar(x0,y,"Canales","Cuentas")
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
 
         corteLa_Pb=[273, 299]
-        p0_La_Pb=[0,1,12,10.551,0.01]
+        p0_La_Pb=[0,1,2200,10.551,0.05]
         xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb = cortar_datos(corteLa_Pb[0], corteLa_Pb[1], x, y, x_err, y_err)
-        parametrosLa_Pb, erroresLa_Pb, _, _ = ajustar_gaussiana_recta_odr(xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb, p0_La_Pb, False,"Pb")
-
+        parametrosLa_Pb, erroresLa_Pb, _, _ = ajustar_gaussiana_recta_odr(xLa_Pb, yLa_Pb, xerrLa_Pb, yerrLa_Pb, p0_La_Pb, False)
+        #10.50(2) keV (La1 del Pb)
         
+        corteLb_Pb=[325, 361]
+        p0_Lb_Pb=[0,1,1300,12.6,0.05]
+        xLb_Pb, yLb_Pb, xerrLb_Pb, yerrLb_Pb = cortar_datos(corteLb_Pb[0], corteLb_Pb[1], x, y, x_err, y_err)
+        parametrosLb_Pb, erroresLb_Pb, _, _ = ajustar_gaussiana_recta_odr(xLb_Pb, yLb_Pb, xerrLb_Pb, yerrLb_Pb, p0_Lb_Pb, False)
+        #12.59(3) keV (Lb1 del Pb)
+        
+        corteLl_Pb=[238, 259]
+        p0_Ll_Pb=[0,1,1300,9.184,0.05]
+        xLl_Pb, yLl_Pb, xerrLl_Pb, yerrLl_Pb = cortar_datos(corteLl_Pb[0], corteLl_Pb[1], x, y, x_err, y_err)
+        parametrosLl_Pb, erroresLl_Pb, _, _ = ajustar_gaussiana_recta_odr(xLl_Pb, yLl_Pb, xerrLl_Pb, yerrLl_Pb, p0_Ll_Pb, False)
+        #9.14(1) keV (Ll del Pb)
+
+        corteLg_Pb=[391, 409]
+        p0_Lg_Pb=[0,1,1300,14.766,0.05]
+        xLg_Pb, yLg_Pb, xerrLg_Pb, yerrLg_Pb = cortar_datos(corteLg_Pb[0], corteLg_Pb[1], x, y, x_err, y_err)
+        parametrosLg_Pb, erroresLg_Pb, _, _ = ajustar_gaussiana_recta_odr(xLg_Pb, yLg_Pb, xerrLg_Pb, yerrLg_Pb, p0_Lg_Pb, False)
+        #14.74(1) keV (Lg1 del Pb)
+        
+        corteMa_Pb=[55, 73]
+        p0_Ma_Pb=[0,1,500,2.342,0.1]
+        xMa_Pb, yMa_Pb, xerrMa_Pb, yerrMa_Pb = cortar_datos(corteMa_Pb[0], corteMa_Pb[1], x, y, x_err, y_err)
+        parametrosMa_Pb, erroresMa_Pb, _, _ = ajustar_gaussiana_recta_odr(xMa_Pb, yMa_Pb, xerrMa_Pb, yerrMa_Pb, p0_Ma_Pb, False)
+        #2.30(1) keV (Ma del Pb)
+
 
 
 

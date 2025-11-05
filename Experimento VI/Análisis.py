@@ -6,21 +6,22 @@ import matplotlib.pyplot as plt
 from scipy.odr import ODR, Model, RealData
 from scipy.special import erf
 
-def fit_lineal(x, y, err_x=None, err_y=None, mostrar_grafica=True):
+def fit_lineal(x, y, err_x=None, err_y=None, mostrar_grafica=True, label_x = 'Eje X', label_y = 'Eje Y'):
     # Conversión a arrays
     x = np.array(x, dtype=float)
     y = np.array(y, dtype=float)
 
     # Manejo de errores
     if err_x is None:
-        err_x = np.zeros_like(x)
+        err_x = np.full_like(x, 1e-6, dtype=float)
     elif np.isscalar(err_x):
         err_x = np.full_like(x, err_x, dtype=float)
 
     if err_y is None:
-        err_y = np.zeros_like(y)
+        err_y = np.full_like(y, 1e-6, dtype=float)
     elif np.isscalar(err_y):
         err_y = np.full_like(y, err_y, dtype=float)
+
 
     # Modelo lineal
     def f_lineal(beta, x):
@@ -62,8 +63,8 @@ def fit_lineal(x, y, err_x=None, err_y=None, mostrar_grafica=True):
                         f'b={b:.2f}±{sb:.2f}\n'
                         f'R²={r2:.4f}'))
         
-        plt.xlabel('Canal')
-        plt.ylabel('Energía [keV]')
+        plt.xlabel(label_x)
+        plt.ylabel(label_y)
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.show()
@@ -703,7 +704,7 @@ errE=[0.001,0.001,0.001,0.001,0.001]
 canal=[parametrosMa_Am[3],parametrosLa_Am[3],parametrosLb_Am[1],parametrosLb_Am[4],parametrosLg_Am[3]]
 errCanal=[erroresMa_Am[3],erroresLa_Am[3],erroresLb_Am[1],erroresLb_Am[4],erroresLg_Am[3]]
 
-fit_lineal(canal,E,errCanal,errE,False)
+fit_lineal(canal,E,errCanal,errE,False,"Canal","Energpia [keV]")
 
 #Ll
 corteLl_Am=[308, 337]
@@ -722,7 +723,7 @@ errE=[0.001,0.001,0.001,0.001,0.001,0.001,0.001]
 canal=[parametrosM_Am[1],parametrosM_Am[4],parametrosLl_Am[3],parametrosLa_Am[3],parametrosLb_Am[1],parametrosLb_Am[4],parametrosLg_Am[3]]
 errCanal=[erroresM_Am[1],erroresM_Am[4],erroresLl_Am[3],erroresLa_Am[3],erroresLb_Am[1],erroresLb_Am[4],erroresLg_Am[3]]
 
-m, sm, b, sb, r2 = fit_lineal(canal,E,errCanal,errE,False)
+m, sm, b, sb, r2 = fit_lineal(canal,E,errCanal,errE,False,"Canal","Energpia [keV]")
 
 df_Am["Energía"] = df_Am["Canal"] * m + b
 x_Am_calibrado = df_Am["Energía"]
@@ -995,7 +996,7 @@ for j,i in enumerate(archivos) :
 
     elif j==14:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
-        graficar(x0,y,"Canales","Cuentas")
+        #graficar(x0,y,"Canales","Cuentas")
 
         corteKa_Zn=[222, 246]
         p0_Ka_Zn=[0,1,590,8.637,0.1]
@@ -1006,5 +1007,62 @@ for j,i in enumerate(archivos) :
         corteKb_Zn=[253, 267]
         p0_Kb_Zn=[0,1,80,9.570,0.1]
         xKb_Zn, yKb_Zn, xerrKb_Zn, yerrKb_Zn = cortar_datos(corteKb_Zn[0], corteKb_Zn[1], x, y, x_err, y_err)
-        parametrosKb_Zn, erroresKb_Zn, _, _ = ajustar_gaussiana_recta_odr(xKb_Zn, yKb_Zn, xerrKb_Zn, yerrKb_Zn, p0_Kb_Zn, True)
+        parametrosKb_Zn, erroresKb_Zn, _, _ = ajustar_gaussiana_recta_odr(xKb_Zn, yKb_Zn, xerrKb_Zn, yerrKb_Zn, p0_Kb_Zn, False)
         #9.53(1) keV (Kb1 del Zn)
+
+    elif j==15:
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
+
+        corteKa_Zr=[415, 442]
+        p0_Ka_Zr=[0,1,255,15.775,0.1]
+        xKa_Zr, yKa_Zr, xerrKa_Zr, yerrKa_Zr = cortar_datos(corteKa_Zr[0], corteKa_Zr[1], x, y, x_err, y_err)
+        parametrosKa_Zr, erroresKa_Zr, _, _ = ajustar_gaussiana_recta_odr(xKa_Zr, yKa_Zr, xerrKa_Zr, yerrKa_Zr, p0_Ka_Zr, False)
+        #15.74(1) keV (Ka1 del Zr)
+
+        corteKb_Zr=[469, 497]
+        p0_Kb_Zr=[0,1,50,17.668,0.1]
+        xKb_Zr, yKb_Zr, xerrKb_Zr, yerrKb_Zr = cortar_datos(corteKb_Zr[0], corteKb_Zr[1], x, y, x_err, y_err)
+        parametrosKb_Zr, erroresKb_Zr, _, _ = ajustar_gaussiana_recta_odr(xKb_Zr, yKb_Zr, xerrKb_Zr, yerrKb_Zr, p0_Kb_Zr, False)
+        #17.70(1) keV (Kb1 del Zr)
+
+def leer_datos_espectros(ruta_archivo):
+    df = pd.read_csv(ruta_archivo, sep='\t', engine='python')
+    encabezado = df.iloc[1].tolist()
+    df = df[2:].reset_index(drop=True)
+    df.columns = ['Elemento'] + encabezado[1:]
+    for col in df.columns[1:]:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    df = df.dropna(how='all', subset=df.columns[1:])
+    return df
+
+df_datos = leer_datos_espectros('Experimento VI/Datos/Datos tpVI - Hoja 1.tsv')
+
+y_Z = df_datos['Z'].values
+x_Ka = np.sqrt(df_datos['Ka'].values)
+x_Kb = np.sqrt(df_datos['Kb'].values)
+x_La = np.sqrt(df_datos['La'].values)
+x_Lb = np.sqrt(df_datos['Lb'].values)
+
+yerr_Z = np.full(len(y_Z), 0.1)
+xerr_Ka =df_datos['errKa'].values / (2 * x_Ka)
+xerr_Kb =df_datos['errKb'].values / (2 * x_Kb)
+xerr_La =df_datos['errLa'].values / (2 * x_La)
+xerr_Lb =df_datos['errLb'].values / (2 * x_Lb)
+ 
+
+def limpiar_datos(x, y, xerr, yerr):
+    mask = np.isfinite(x) & np.isfinite(y) & np.isfinite(xerr) & np.isfinite(yerr)
+    return x[mask], y[mask], xerr[mask], yerr[mask]
+
+x_Ka, y_Ka, xerr_Ka, yerr_Ka = limpiar_datos(x_Ka, y_Z, xerr_Ka, yerr_Z)
+x_Kb, y_Kb, xerr_Kb, yerr_Kb = limpiar_datos(x_Kb, y_Z, xerr_Kb, yerr_Z)
+x_La, y_La, xerr_La, yerr_La = limpiar_datos(x_La, y_Z, xerr_La, yerr_Z)
+x_Lb, y_Lb, xerr_Lb, yerr_Lb = limpiar_datos(x_Lb, y_Z, xerr_Lb, yerr_Z)
+
+#graficar(x_Ka, y_Z, "√Ka (keV^0.5)", "Número atómico Z")
+fit_lineal(x_Ka, y_Ka, xerr_Ka, yerr_Ka, True, "√E (keV^0.5)", "Z")
+fit_lineal(x_Kb, y_Kb, xerr_Kb, yerr_Kb, True, "√E (keV^0.5)", "Z")
+fit_lineal(x_La, y_La, xerr_La, yerr_La, True, "√E (keV^0.5)", "Z")
+fit_lineal(x_Lb, y_Lb, xerr_Lb, yerr_Lb, True, "√E (keV^0.5)", "Z")
+

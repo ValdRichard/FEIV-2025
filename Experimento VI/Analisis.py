@@ -656,6 +656,49 @@ x_Am_err = np.full(len(x_Am), 1/2, dtype=float)
 y_Am_err = np.sqrt(y_Am)
 y_Am_err[y_Am_err == 0] = 0.0001
 
+df_Am_2 = leer_spe( ruta, 'Am241.Spe') 
+x_Am_2 = df_Am_2["Canal"].values
+y_Am_2 = df_Am_2["Cuentas"].values
+
+x_Am_err_2 = np.full(len(x_Am), 1/2, dtype=float)
+y_Am_err_2 = np.sqrt(y_Am)
+y_Am_err_2[y_Am_err_2 == 0] = 0.0001
+
+
+#graficar(x_Am_2, y_Am_2, "Canal", "Cuentas")
+
+#La
+corteLa_2=[368, 390]
+p0_La_2=[0,1,200,379,3]
+xLa_2, yLa_2, xerrLa_2, yerrLa_2 = cortar_datos(corteLa_2[0], corteLa_2[1], x_Am_2, y_Am_2, x_Am_err_2, y_Am_err_2)
+parametrosLa_2, erroresLa_2, _, _ = ajustar_gaussiana_recta_odr(xLa_2, yLa_2, xerrLa_2, yerrLa_2, p0_La_2, False)
+#379.2(1)
+
+#Lb1
+corteLb_2=[471, 496]
+p0_Lb_2=[0,1,120,483,3]
+xLb_2, yLb_2, xerrLb_2, yerrLb_2 = cortar_datos(corteLb_2[0], corteLb_2[1], x_Am_2, y_Am_2, x_Am_err_2, y_Am_err_2)
+parametrosLb_2, erroresLb_2, _, _ = ajustar_gaussiana_recta_odr(xLb_2, yLb_2, xerrLb_2, yerrLb_2, p0_Lb_2, False)
+#483.1(2)
+
+m0=0.037
+b0=-1.612
+sm0=0.01
+sb0=0.001
+
+df_A = leer_spe( ruta, 'anillo2.Spe') 
+df_A["Energía"] = df_A["Canal"] * m0 + b0
+x0_A = df_A["Canal"].values
+x_A = df_A["Energía"].values
+y_A = df_A["Cuentas"].values
+
+x0_err_A = np.full(len(x_A), 1/2, dtype=float)
+x_err_A = np.sqrt( (m0 * x0_err_A)**2 + (x0_A * sm0)**2 + sb0**2 )
+y_err_A = np.sqrt(y_A)
+y_err_A[y_err_A == 0] = 0.0001
+
+graficar_con_error(x_A, y_A, x_err_A, y_err_A, "Energía [keV]", "Cuentas")
+graficar(x0_A   , y_A, "Canal", "Cuentas")
 
 # --- Graficamos sin y con errores ---
 #graficar(x_Am, y_Am, "Canal", "Cuentas")
@@ -817,19 +860,19 @@ for j,i in enumerate(archivos) :
         corteKa_Cr=[135, 157]
         p0_Ka_Cr=[0,1,8000,5.4052,0.1]
         xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr = cortar_datos(corteKa_Cr[0], corteKa_Cr[1], x, y, x_err, y_err)
-        parametrosKa_Cr, erroresKa_Cr, _, _ = ajustar_gaussiana_recta_odr(xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr, p0_Ka_Cr, False)
+        parametrosKa_Cr, erroresKa_Cr, _, _ = ajustar_gaussiana_recta_odr(xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr, p0_Ka_Cr, True)
         #5.37(2) keV (Ka2 del Cr)
 
         corte1_Cr=[182, 236]
         p0_1_Cr=[0,1,250,7.398,0.1,50,8.191,0.1]
         x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr = cortar_datos(corte1_Cr[0], corte1_Cr[1], x, y, x_err, y_err)
-        parametros1_Cr, errores1_Cr, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr, p0_1_Cr, False)
+        parametros1_Cr, errores1_Cr, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr, p0_1_Cr, True)
         #7.40(1) keV y 8.19(2) keV (Ka2 del Ni y Kb1 del Ni)
 
         corte2_Cr=[345, 393]
         p0_2_Cr=[0,1,40,13.379,0.1,20,13.780,0.15,20,13.965,0.1]
         x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr = cortar_datos(corte2_Cr[0], corte2_Cr[1], x, y, x_err, y_err)
-        parametros2_Cr, errores2_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr, p0_2_Cr, False)
+        parametros2_Cr, errores2_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr, p0_2_Cr, True)
         #13.36(2) keV, 13.73(2) keV y 13.96(3) keV (Lg3 del Pt*, La2 del Np y La1 del Np)
 
         corte3_Cr=[418,496]
@@ -847,7 +890,7 @@ for j,i in enumerate(archivos) :
         corte5_Cr=[664,733]
         p0_5_Cr=[0,1,20,24.896,0.1,7,25.451,0.1,10,26.391,0.1]
         x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr = cortar_datos(corte5_Cr[0], corte5_Cr[1], x, y, x_err, y_err)
-        parametros5_Cr, errores5_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr, p0_5_Cr, False)
+        parametros5_Cr, errores5_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr, p0_5_Cr, True)
         #24.86(2) keV, 25.48(3) keV y 26.33(2) keV (Kb1 y Kb2 del Ag y Ka1 del Sb)
 
         #Espectro del Cr, con impurezas de Ni, Pt, Ag y Sb, y filtraciones de rayos del Np
@@ -1215,29 +1258,77 @@ fit_lineal(x_Kb, y_Kb, xerr_Kb, yerr_Kb, False, "√E (keV^0.5)", "Número atóm
 fit_lineal(x_La, y_La, xerr_La, yerr_La, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas La")
 fit_lineal(x_Lb, y_Lb, xerr_Lb, yerr_Lb, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas Lb")
 
-plt.figure(figsize=(8,5))
+# plt.figure(figsize=(8,5))
 
-# Conjunto 1
-plt.errorbar(x_Ka, y_Ka, xerr=xerr_Ka, yerr=yerr_Ka, fmt='o', label='Ka', capsize=3)
-plt.plot(x_Ka, np.poly1d(np.polyfit(x_Ka, y_Ka, 1))(x_Ka), '-', color='C0')
+# # Conjunto 1
+# plt.errorbar(x_Ka, y_Ka, xerr=xerr_Ka, yerr=yerr_Ka, fmt='o', label='Ka', capsize=3)
+# plt.plot(x_Ka, np.poly1d(np.polyfit(x_Ka, y_Ka, 1))(x_Ka), '-', color='C0')
 
-# Conjunto 2
-plt.errorbar(x_Kb, y_Kb, xerr=xerr_Kb, yerr=yerr_Kb, fmt='o', label='Kb', capsize=3)
-plt.plot(x_Kb, np.poly1d(np.polyfit(x_Kb, y_Kb, 1))(x_Kb), '-', color='C1')
+# # Conjunto 2
+# plt.errorbar(x_Kb, y_Kb, xerr=xerr_Kb, yerr=yerr_Kb, fmt='o', label='Kb', capsize=3)
+# plt.plot(x_Kb, np.poly1d(np.polyfit(x_Kb, y_Kb, 1))(x_Kb), '-', color='C1')
 
-# Conjunto 3
-plt.errorbar(x_La, y_La, xerr=xerr_La, yerr=yerr_La, fmt='o', label='La', capsize=3)
-plt.plot(x_La, np.poly1d(np.polyfit(x_La, y_La, 1))(x_La), '-', color='C2')
+# # Conjunto 3
+# plt.errorbar(x_La, y_La, xerr=xerr_La, yerr=yerr_La, fmt='o', label='La', capsize=3)
+# plt.plot(x_La, np.poly1d(np.polyfit(x_La, y_La, 1))(x_La), '-', color='C2')
 
-# Conjunto 4
-plt.errorbar(x_Lb, y_Lb, xerr=xerr_Lb, yerr=yerr_Lb, fmt='o', label='Lb', capsize=3)
-plt.plot(x_Lb, np.poly1d(np.polyfit(x_Lb, y_Lb, 1))(x_Lb), '-', color='C3')
+# # Conjunto 4
+# plt.errorbar(x_Lb, y_Lb, xerr=xerr_Lb, yerr=yerr_Lb, fmt='o', label='Lb', capsize=3)
+# plt.plot(x_Lb, np.poly1d(np.polyfit(x_Lb, y_Lb, 1))(x_Lb), '-', color='C3')
 
-plt.xlabel('√E (√keV)')
-plt.ylabel('Número atómico Z')
-plt.title('Verificación de la Ley De Moseley')
-plt.grid(alpha=0.3)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# plt.xlabel('√E (√keV)')
+# plt.ylabel('Número atómico Z')
+# plt.title('Verificación de la Ley De Moseley')
+# plt.grid(alpha=0.3)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
+
+
+# C = 21.4896626848081 
+
+# def f_lineal_C(beta, x):
+#     m, b = beta
+#     return m * x * C + b
+
+# # Asumiendo que ya tenés definidos x_Ka, y_Ka, xerr_Ka, yerr_Ka
+# modelo = Model(f_lineal_C)
+# data = RealData(x_Ka, y_Ka, sx=xerr_Ka, sy=yerr_Ka)
+# betai = [2.0, 0.0]
+
+# odr = ODR(data, modelo, beta0=betai)
+# out = odr.run()
+
+# m, b = out.beta
+# sm, sb = out.sd_beta
+
+# y_pred_Ka = f_lineal_C(out.beta, x_Ka)
+# ss_res = np.sum((y_Ka - y_pred_Ka) ** 2)
+# ss_tot = np.sum((y_Ka - np.mean(y_Ka)) ** 2)
+# r2 = 1 - ss_res / ss_tot
+
+# # ==== Gráfico ====
+# plt.figure(figsize=(10,6))
+# plt.errorbar(x_Ka, y_Ka, xerr=xerr_Ka, yerr=yerr_Ka, 
+#              fmt='o', alpha=0.6, label='Datos Ka', 
+#              color='orange', capsize=3)
+
+# x_fit = np.linspace(np.min(x_Ka), np.max(x_Ka), 500)
+# y_fit = f_lineal_C(out.beta, x_fit)
+
+# plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
+#          label=(f'Ajuste ODR\n'
+#                 f'm={m:.2f}±{sm:.2f}\n'
+#                 f'b={b:.2f}±{sb:.2f}\n'
+#                 f'R²={r2:.4f}'))
+
+# plt.xlabel("√E (keV^0.5)")
+# plt.ylabel("Número atómico Z")
+# plt.title("Ajuste ODR – Línea Ka")
+# plt.legend()
+# plt.grid(True, alpha=0.3)
+# plt.show()
+
+
+
 

@@ -61,30 +61,94 @@ def graficar(x, y, xlabel, ylabel):
     plt.grid(alpha=0.3)
     plt.show()
 
-def graficar_con_error(x, y, xerr, yerr, xlabel, ylabel, titulo=None):
-    plt.figure(figsize=(8, 5))
-    
-    # Graficamos con barras de error
+
+
+def graficar_con_error(x, y, xerr, yerr, xlabel, ylabel, titulo=None, regiones=None):
+    """
+    Grafica datos con barras de error y permite marcar regiones y picos (fotopicos).
+
+    Los fotopicos se muestran como líneas punteadas con etiquetas al costado.
+    Las regiones muestran su etiqueta centrada, con alpha de texto independiente.
+    """
+
+    plt.figure(figsize=(10, 6))
+
+    # Datos experimentales
     plt.errorbar(
         x, y,
         xerr=xerr, yerr=yerr,
-        fmt='o',                # formato del punto (o = círculo)
-        ecolor='gray',          # color de las barras de error
-        elinewidth=1,           # grosor de línea de error
-        capsize=3,              # tamaño de los "topes" en las barras
-        markersize=4,           # tamaño de los puntos
-        markeredgecolor='black',
-        markerfacecolor='blue',
-        alpha=0.8
+        fmt='.', color='orange',
+        ecolor='gray', elinewidth=1, capsize=3,
+        alpha=0.5, label='Datos experimentales'
     )
-    
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+
+    # Marcar regiones y picos
+    if regiones:
+        for reg in regiones:
+            tipo = reg.get('tipo', 'region')
+
+            # === REGIONES ===
+            if tipo == 'region':
+                plt.axvspan(
+                    reg['xmin'], reg['xmax'],
+                    color=reg.get('color', 'lightblue'),
+                    alpha=reg.get('alpha', 0.3)
+                )
+
+                if reg.get('label'):
+                    plt.text(
+                        (reg['xmin'] + reg['xmax']) / 2,
+                        max(y) * reg.get('y_pos', 0.4),
+                        reg['label'],
+                        ha='center',
+                        va='bottom',
+                        fontsize=15,
+                        color=reg.get('color_texto', 'black'),
+                        alpha=reg.get('alpha_text', 0.95),  # texto más visible
+                        fontweight='bold'
+                    )
+
+            # === PICOS / FOTOPICOS ===
+            elif tipo in ['pico', 'fotopico']:
+                plt.axvline(
+                    reg['x'],
+                    color=reg.get('color', 'black'),
+                    linestyle='--',
+                    linewidth=1.5,
+                    alpha=reg.get('alpha', 0.8)
+                )
+
+                if reg.get('gamma'):
+                    offset = -reg.get('offset', 45) * 1.6
+                else:
+                    offset = reg.get('offset', 5)
+
+                plt.text(
+                    reg['x'] + offset,
+                    max(y) * reg.get('y_pos', 0.9),
+                    reg.get('label', ''),
+                    rotation=0,
+                    color=reg.get('color_texto', 'black'),
+                    fontsize=15,
+                    va='bottom',
+                    ha='left',
+                    alpha=reg.get('alpha_text', 0.95),   # 💡 same visibility as region text
+                    fontweight='bold'                    # 💡 same thickness as region text
+                )
+
+    # Estética general
+    plt.xlabel(xlabel, fontsize=13)
+    plt.ylabel(ylabel, fontsize=13)
     if titulo:
-        plt.title(titulo)
+        plt.title(titulo, fontsize=15)
+    plt.legend(fontsize=14)
     plt.grid(alpha=0.3)
     plt.tight_layout()
     plt.show()
+
+
+
+
 
 def leer_spe(path, nombre):
     with open(path + nombre, "r") as f:
@@ -296,10 +360,14 @@ def ajustar_pico_gaussiano(x_data, y_data, x_err, y_err, p0, mostrarGrafica=True
 def devolver_energia_cuentas(
     df,
     corte1=(13, 60),
+    corteBa137=(13, 60),
     p0_1=[0, 30, 7, 4, 0],
     mostrarGrafica1=True,
     corte2=(550, 820),
+    corteGamma=(540, 810),
     p0_2=[0, 662, 7, 4, 0],
+    p0_Ba137 = [0, 33, 7, 4, 0],
+    p0_Gamma = [0, 622, 7, 4, 0],
     mostrarGrafica2=True,
     mostrarGraficaFinal=True,
     corteRetro = (70, 120),
@@ -348,9 +416,33 @@ def devolver_energia_cuentas(
     Cuentas = df["Cuentas"][:800]
     errCuentas = np.sqrt(df["Cuentas"][:800])
     E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
+      # --- Ajuste gaussiano + fondo lineal ---
+    E_Gamma, Cuentas_Gamma, errE_Gamma, errCuentas_Gamma = cortar_datos(
+        *corteGamma, E, Cuentas, errE, errCuentas
+    )
+     # --- Ajuste gaussiano + fondo lineal ---
+    parametros_Gamma, errores_Gamma, _, _ = ajustar_pico_gaussiano(
+        E_Gamma, Cuentas_Gamma, errE_Gamma, errCuentas_Gamma, p0_Gamma, False, nombre_archivoRetro
+    )
+    E_Ba137, Cuentas_Ba137, errE_Ba137, errCuentas_Ba137 = cortar_datos(
+        *corteBa137, E, Cuentas, errE, errCuentas
+    )
+     # --- Ajuste gaussiano + fondo lineal ---
+    parametros_Ba137, errores_Ba137, _, _ = ajustar_pico_gaussiano(
+        E_Ba137, Cuentas_Ba137, errE_Ba137, errCuentas_Ba137, p0_Ba137, False, nombre_archivoRetro
+    )
+    regiones_cs137 = [
+        {'tipo': 'pico', 'x': 662, 'label': 'Fotopico [662.0(1) keV]', 'color': 'black', 'alpha': 0.8, 'gamma':True, 'offset': 110},
+        {'tipo': 'region', 'xmin': 440, 'xmax': 550, 'label': 'Borde Compton',
+        'color': 'lightgreen', 'alpha': 0.25, 'alpha_text': 0.95},  # 💡 text stays solid
+        {'tipo': 'region', 'xmin': 140, 'xmax': 300, 'label': 'Pico de retrodispersión',
+        'color': 'lightblue', 'alpha': 0.25, 'alpha_text': 0.95},  # 💡 text stays solid
+        {'tipo': 'pico', 'x': 32, 'label': 'Fotopico [32.0(2) keV]', 'color': 'black', 'alpha': 0.8, 'gamma':False}
+    ]
+    
     # print(f"Errores en E: {errE}")
     if mostrarGraficaFinal:
-        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas')
+        graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas',  regiones=regiones_cs137)
     
     E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
         *corteRetro, E, Cuentas, errE, errCuentas

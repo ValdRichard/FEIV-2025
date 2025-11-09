@@ -66,7 +66,7 @@ def graficar_retrodispersion_comparativa(configuraciones, titulo="Comparación d
     
     plt.xlabel('Energía [keV]', fontsize=12)
     plt.ylabel('Cuentas', fontsize=12)
-    plt.legend(fontsize=10)
+    plt.legend(fontsize=20)
     plt.grid(alpha=0.3)
     plt.tight_layout()
     
@@ -81,7 +81,7 @@ def graficar_retrodispersion_comparativa(configuraciones, titulo="Comparación d
 configuraciones = [
     {
         'archivo': 'Cs137-cu.Spe',
-        'material': 'Cobre',
+        'material': '$^{137}$Cs + Cu',
         'color': 'peru',
         'corteRetro': (140, 300),
         'corte1': (10, 69),
@@ -93,7 +93,7 @@ configuraciones = [
     },
     {
         'archivo': 'Cs137-Pb.Spe',  # Ajusta los nombres de archivo
-        'material': 'Plomo',
+        'material': '$^{137}$Cs + Pb',
         'color': 'grey',
         'corteRetro': (140, 300),  # Ajusta según tus datos
         'corte1': (10, 69),
@@ -105,7 +105,7 @@ configuraciones = [
     },
     {
         'archivo': 'Cs137-madera.Spe',  # Ajusta los nombres de archivo
-        'material': 'Madera',
+        'material': '$^{137}$Cs + C',
         'color': 'brown',
         'corteRetro': (140, 300),  # Ajusta según tus datos
         'corte1': (10, 69),
@@ -117,7 +117,7 @@ configuraciones = [
     },
     {
         'archivo': 'Cs137-2.Spe',  # Ajusta los nombres de archivo
-        'material': 'Laboratorio',
+        'material': '$^{137}$Cs',
         'color': 'blue',
         'corteRetro': (140, 300),  # Ajusta según tus datos
         'corte1': (10, 69),

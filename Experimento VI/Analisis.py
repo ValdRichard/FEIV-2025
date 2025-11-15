@@ -656,50 +656,6 @@ x_Am_err = np.full(len(x_Am), 1/2, dtype=float)
 y_Am_err = np.sqrt(y_Am)
 y_Am_err[y_Am_err == 0] = 0.0001
 
-df_Am_2 = leer_spe( ruta, 'Am241.Spe') 
-x_Am_2 = df_Am_2["Canal"].values
-y_Am_2 = df_Am_2["Cuentas"].values
-
-x_Am_err_2 = np.full(len(x_Am), 1/2, dtype=float)
-y_Am_err_2 = np.sqrt(y_Am)
-y_Am_err_2[y_Am_err_2 == 0] = 0.0001
-
-
-#graficar(x_Am_2, y_Am_2, "Canal", "Cuentas")
-
-#La
-corteLa_2=[368, 390]
-p0_La_2=[0,1,200,379,3]
-xLa_2, yLa_2, xerrLa_2, yerrLa_2 = cortar_datos(corteLa_2[0], corteLa_2[1], x_Am_2, y_Am_2, x_Am_err_2, y_Am_err_2)
-parametrosLa_2, erroresLa_2, _, _ = ajustar_gaussiana_recta_odr(xLa_2, yLa_2, xerrLa_2, yerrLa_2, p0_La_2, False)
-#379.2(1)
-
-#Lb1
-corteLb_2=[471, 496]
-p0_Lb_2=[0,1,120,483,3]
-xLb_2, yLb_2, xerrLb_2, yerrLb_2 = cortar_datos(corteLb_2[0], corteLb_2[1], x_Am_2, y_Am_2, x_Am_err_2, y_Am_err_2)
-parametrosLb_2, erroresLb_2, _, _ = ajustar_gaussiana_recta_odr(xLb_2, yLb_2, xerrLb_2, yerrLb_2, p0_Lb_2, False)
-#483.1(2)
-
-m0=0.037
-b0=-1.612
-sm0=0.01
-sb0=0.001
-
-df_A = leer_spe( ruta, 'anillo2.Spe') 
-df_A["Energía"] = df_A["Canal"] * m0 + b0
-x0_A = df_A["Canal"].values
-x_A = df_A["Energía"].values
-y_A = df_A["Cuentas"].values
-
-x0_err_A = np.full(len(x_A), 1/2, dtype=float)
-x_err_A = np.sqrt( (m0 * x0_err_A)**2 + (x0_A * sm0)**2 + sb0**2 )
-y_err_A = np.sqrt(y_A)
-y_err_A[y_err_A == 0] = 0.0001
-
-graficar_con_error(x_A, y_A, x_err_A, y_err_A, "Energía [keV]", "Cuentas")
-graficar(x0_A   , y_A, "Canal", "Cuentas")
-
 # --- Graficamos sin y con errores ---
 #graficar(x_Am, y_Am, "Canal", "Cuentas")
 #graficar_con_error(x_Am, y_Am, x_Am_err, y_Am_err, "Canales", "Cuentas")
@@ -860,19 +816,19 @@ for j,i in enumerate(archivos) :
         corteKa_Cr=[135, 157]
         p0_Ka_Cr=[0,1,8000,5.4052,0.1]
         xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr = cortar_datos(corteKa_Cr[0], corteKa_Cr[1], x, y, x_err, y_err)
-        parametrosKa_Cr, erroresKa_Cr, _, _ = ajustar_gaussiana_recta_odr(xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr, p0_Ka_Cr, True)
+        parametrosKa_Cr, erroresKa_Cr, _, _ = ajustar_gaussiana_recta_odr(xKa_Cr, yKa_Cr, xerrKa_Cr, yerrKa_Cr, p0_Ka_Cr, False)
         #5.37(2) keV (Ka2 del Cr)
 
         corte1_Cr=[182, 236]
         p0_1_Cr=[0,1,250,7.398,0.1,50,8.191,0.1]
         x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr = cortar_datos(corte1_Cr[0], corte1_Cr[1], x, y, x_err, y_err)
-        parametros1_Cr, errores1_Cr, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr, p0_1_Cr, True)
+        parametros1_Cr, errores1_Cr, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Cr, y1_Cr, xerr1_Cr, yerr1_Cr, p0_1_Cr, False)
         #7.40(1) keV y 8.19(2) keV (Ka2 del Ni y Kb1 del Ni)
 
         corte2_Cr=[345, 393]
         p0_2_Cr=[0,1,40,13.379,0.1,20,13.780,0.15,20,13.965,0.1]
         x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr = cortar_datos(corte2_Cr[0], corte2_Cr[1], x, y, x_err, y_err)
-        parametros2_Cr, errores2_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr, p0_2_Cr, True)
+        parametros2_Cr, errores2_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x2_Cr, y2_Cr, xerr2_Cr, yerr2_Cr, p0_2_Cr, False)
         #13.36(2) keV, 13.73(2) keV y 13.96(3) keV (Lg3 del Pt*, La2 del Np y La1 del Np)
 
         corte3_Cr=[418,496]
@@ -890,7 +846,7 @@ for j,i in enumerate(archivos) :
         corte5_Cr=[664,733]
         p0_5_Cr=[0,1,20,24.896,0.1,7,25.451,0.1,10,26.391,0.1]
         x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr = cortar_datos(corte5_Cr[0], corte5_Cr[1], x, y, x_err, y_err)
-        parametros5_Cr, errores5_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr, p0_5_Cr, True)
+        parametros5_Cr, errores5_Cr, _, _ = ajustar_gaussiana_triple_recta_odr(x5_Cr, y5_Cr, xerr5_Cr, yerr5_Cr, p0_5_Cr, False)
         #24.86(2) keV, 25.48(3) keV y 26.33(2) keV (Kb1 y Kb2 del Ag y Ka1 del Sb)
 
         #Espectro del Cr, con impurezas de Ni, Pt, Ag y Sb, y filtraciones de rayos del Np
@@ -1094,6 +1050,26 @@ for j,i in enumerate(archivos) :
         parametrosMa_Pb, erroresMa_Pb, _, _ = ajustar_gaussiana_recta_odr(xMa_Pb, yMa_Pb, xerrMa_Pb, yerrMa_Pb, p0_Ma_Pb, False)
         #2.30(1) keV (Ma del Pb)
 
+        corte1_Pb=[192,229]
+        p0_1_Pb=[0,1,400,7.430,0.1,100,8.180,0.1]
+        x1_Pb, y1_Pb, xerr1_Pb, yerr1_Pb = cortar_datos(corte1_Pb[0], corte1_Pb[1], x, y, x_err, y_err)
+        parametros1_Pb, errores1_Pb, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Pb, y1_Pb, xerr1_Pb, yerr1_Pb, p0_1_Pb, False)
+        #7.42(1) keV y 8.18(1) keV (Ka1 y Kb1 del Ni)
+
+        corte2_Pb=[369,390]
+        p0_2_Pb=[0,1,100,13.925,0.1]
+        x2_Pb, y2_Pb, xerr2_Pb, yerr2_Pb = cortar_datos(corte2_Pb[0], corte2_Pb[1], x, y, x_err, y_err)
+        parametros2_Pb, errores2_Pb, _, _ = ajustar_gaussiana_recta_odr(x2_Pb, y2_Pb, xerr2_Pb, yerr2_Pb, p0_2_Pb, False)
+        #13.92(1) keV (La1 del Np)
+
+        corte3_Pb=[587,615]
+        p0_3_Pb=[0,1,100,22.166,0.1]
+        x3_Pb, y3_Pb, xerr3_Pb, yerr3_Pb = cortar_datos(corte3_Pb[0], corte3_Pb[1], x, y, x_err, y_err)
+        parametros3_Pb, errores3_Pb, _, _ = ajustar_gaussiana_recta_odr(x3_Pb, y3_Pb, xerr3_Pb, yerr3_Pb, p0_3_Pb, False)
+        #22.13(1) keV (Ka1 del Ag)
+
+        #Espectro del Pb, con impurezas de Ni, y Ag, y filtraciones de rayos del Np
+
     elif j==9:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
@@ -1102,13 +1078,33 @@ for j,i in enumerate(archivos) :
         p0_Lg_Pd=[0,1,25,3.328,0.1]
         xLg_Pd, yLg_Pd, xerrLg_Pd, yerrLg_Pd = cortar_datos(corteLg_Pd[0], corteLg_Pd[1], x, y, x_err, y_err)
         parametrosLg_Pd, erroresLg_Pd, _, _ = ajustar_gaussiana_recta_odr(xLg_Pd, yLg_Pd, xerrLg_Pd, yerrLg_Pd, p0_Lg_Pd, False)
-        #3.32(3) keV (Lg del Pd)
+        #3.32(3) keV (Lg1 del Pd)
 
         corteKa_Pd=[550,624]
         p0_Ka_Pd=[0,1,22,20.746,0.1,75,21.020,0.1,65,22.168,0.1]
         xKa_Pd, yKa_Pd, xerrKa_Pd, yerrKa_Pd = cortar_datos(corteKa_Pd[0], corteKa_Pd[1], x, y, x_err, y_err)
         parametrosKa_Pd, erroresKa_Pd, _, _ = ajustar_gaussiana_triple_recta_odr(xKa_Pd, yKa_Pd, xerrKa_Pd, yerrKa_Pd, p0_Ka_Pd, False)
-        #20.63(3) keV, 21.12(2) keV y 22.11(2) keV (Ka3, Ka1 y ??? del Pd)
+        #20.63(3) keV, 21.12(2) keV y 22.11(2) keV (Lg1 del Np, Ka1 del Pd y Ka1 del Ag)
+
+        corte1_Pd=[188,233]
+        p0_1_Pd=[0,1,90,7.414,0.1,20,8.210,0.1]
+        x1_Pd, y1_Pd, xerr1_Pd, yerr1_Pd = cortar_datos(corte1_Pd[0], corte1_Pd[1], x, y, x_err, y_err)
+        parametros1_Pd, errores1_Pd, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Pd, y1_Pd, xerr1_Pd, yerr1_Pd, p0_1_Pd, False)
+        #7.40(2) keV y 8.18(2) keV (Ka1 y Kb1 del Ni)
+
+        corte2_Pd=[371,394]
+        p0_2_Pd=[0,1,90,13.926,0.1]
+        x2_Pd, y2_Pd, xerr2_Pd, yerr2_Pd = cortar_datos(corte2_Pd[0], corte2_Pd[1], x, y, x_err, y_err)
+        parametros2_Pd, errores2_Pd, _, _ = ajustar_gaussiana_recta_odr(x2_Pd, y2_Pd, xerr2_Pd, yerr2_Pd, p0_2_Pd, False)
+        #13.93(1) keV (La1 del Np)
+
+        corte3_Pd=[414,504]
+        p0_3_Pd=[0,1,15,15.992,0.1,40,16.875,0.15,50,17.763,0.15]
+        x3_Pd, y3_Pd, xerr3_Pd, yerr3_Pd = cortar_datos(corte3_Pd[0], corte3_Pd[1], x, y, x_err, y_err)
+        parametros3_Pd, errores3_Pd, _, _ = ajustar_gaussiana_triple_recta_odr(x3_Pd, y3_Pd, xerr3_Pd, yerr3_Pd, p0_3_Pd, False)
+        #15.93(3) keV, 16.87(2) keV y 17.77(2) keV (Lnu del Np, Lb2 del Np y Lb1 del Np)
+
+        #Espectro del Pd, con impurezas de Ni, Ag, y filtraciones de rayos del Np
 
     elif j==10:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
@@ -1126,6 +1122,44 @@ for j,i in enumerate(archivos) :
         parametrosKb_Ru, erroresKb_Ru, _, _ = ajustar_gaussiana_doble_recta_odr(xKb_Ru, yKb_Ru, xerrKb_Ru, yerrKb_Ru, p0_Kb_Ru, False)
         #21.64(1) keV y 22.10(1) keV (Kb1 y Kb2 del Ru)
 
+        corte1_Ru=[188,236]
+        p0_1_Ru=[0,1,800,7.403,0.1,200,8.204,0.1]
+        x1_Ru, y1_Ru, xerr1_Ru, yerr1_Ru = cortar_datos(corte1_Ru[0], corte1_Ru[1], x, y, x_err, y_err)
+        parametros1_Ru, errores1_Ru, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Ru, y1_Ru, xerr1_Ru, yerr1_Ru, p0_1_Ru, False)
+        #7.40(1) keV y 8.21(1) keV (Ka1 y Kb1 del Ni)
+
+        corte2_Ru=[280,295]
+        p0_2_Ru=[0,1,91,10.521,0.1]
+        x2_Ru, y2_Ru, xerr2_Ru, yerr2_Ru = cortar_datos(corte2_Ru[0], corte2_Ru[1], x, y, x_err, y_err)
+        parametros2_Ru, errores2_Ru, _, _ = ajustar_gaussiana_recta_odr(x2_Ru, y2_Ru, xerr2_Ru, yerr2_Ru, p0_2_Ru, False)
+        #10.53(1) keV (La1 del Pb)
+
+        corte3_Ru=[352,392]
+        p0_3_Ru=[0,1,125,13.400,0.1,100,13.910,0.1]
+        x3_Ru, y3_Ru, xerr3_Ru, yerr3_Ru = cortar_datos(corte3_Ru[0], corte3_Ru[1], x, y, x_err, y_err)
+        parametros3_Ru, errores3_Ru, _, _ = ajustar_gaussiana_doble_recta_odr(x3_Ru, y3_Ru, xerr3_Ru, yerr3_Ru, p0_3_Ru, False)
+        #13.38(1) keV y 13.93(1) keV (La1 del Rb* y La1 del Np)
+
+        corte4_Ru=[447,492]
+        p0_4_Ru=[0,1,120,16.855,0.1,70,17.757,0.15]
+        x4_Ru, y4_Ru, xerr4_Ru, yerr4_Ru = cortar_datos(corte4_Ru[0], corte4_Ru[1], x, y, x_err, y_err)
+        parametros4_Ru, errores4_Ru, _, _ = ajustar_gaussiana_doble_recta_odr(x4_Ru, y4_Ru, xerr4_Ru, yerr4_Ru, p0_4_Ru, False)
+        #16.87(1) keV y 17.76(1) keV (Lb2 del Np y Lb1 del Np)
+
+        corte5_Ru=[672,687]
+        p0_5_Ru=[0,1,57,24.963,0.1]
+        x5_Ru, y5_Ru, xerr5_Ru, yerr5_Ru = cortar_datos(corte5_Ru[0], corte5_Ru[1], x, y, x_err, y_err)
+        parametros5_Ru, errores5_Ru, _, _ = ajustar_gaussiana_recta_odr(x5_Ru, y5_Ru, xerr5_Ru, yerr5_Ru, p0_5_Ru, False)
+        #24.94(1) (Kb1 del Ag)
+
+        corte5_Ru=[705,727]
+        p0_5_Ru=[0,1,50,26.324,0.1]
+        x5_Ru, y5_Ru, xerr5_Ru, yerr5_Ru = cortar_datos(corte5_Ru[0], corte5_Ru[1], x, y, x_err, y_err)
+        parametros5_Ru, errores5_Ru, _, _ = ajustar_gaussiana_recta_odr(x5_Ru, y5_Ru, xerr5_Ru, yerr5_Ru, p0_5_Ru, False)
+        #26.35(1) (Ka1 del Sb)
+
+        #Muestra de Ru, con impurezas de Ni, Pb, Rb*, Ag y Sb, y con filtraciones de rayos del Np
+
     elif j==11:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
@@ -1142,6 +1176,14 @@ for j,i in enumerate(archivos) :
         parametrosKb_Se, erroresKb_Se, _, _ = ajustar_gaussiana_recta_odr(xKb_Se, yKb_Se, xerrKb_Se, yerrKb_Se, p0_Kb_Se, False)
         #12.47(2) keV (Lb1 del Se)
 
+        corte1_Se=[193, 213]
+        p0_1_Se=[0,1,20,7.420,0.1]
+        x1_Se, y1_Se, xerr1_Se, yerr1_Se = cortar_datos(corte1_Se[0], corte1_Se[1], x, y, x_err, y_err)
+        parametros1_Se, errores1_Se, _, _ = ajustar_gaussiana_recta_odr(x1_Se, y1_Se, xerr1_Se, yerr1_Se, p0_1_Se, False)
+        #7.41(2) keV (Ka1 del Ni)
+        
+        #Muestra de Se, con impurezas de Ni
+
     elif j==12:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
@@ -1157,6 +1199,45 @@ for j,i in enumerate(archivos) :
         xKa_Sn, yKa_Sn, xerrKa_Sn, yerrKa_Sn = cortar_datos(corteKa_Sn[0], corteKa_Sn[1], x, y, x_err, y_err)
         parametrosKa_Sn, erroresKa_Sn, _, _ = ajustar_gaussiana_recta_odr(xKa_Sn, yKa_Sn, xerrKa_Sn, yerrKa_Sn, p0_Ka_Sn, False)
         #25.21(1) keV (Ka1 del Sn)
+
+        corte1_Sn=[190,232]
+        p0_1_Sn=[0,1,110,7.418,0.1,30,8.225,0.1]
+        x1_Sn, y1_Sn, xerr1_Sn, yerr1_Sn = cortar_datos(corte1_Sn[0], corte1_Sn[1], x, y, x_err, y_err)
+        parametros1_Sn, errores1_Sn, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Sn, y1_Sn, xerr1_Sn, yerr1_Sn, p0_1_Sn, False)
+        #7.42(1) keV y 8.18(3) keV (Ka1 del Ni y Kb1 del Ni)
+
+        corte2_Sn=[313,336]
+        p0_2_Sn=[0,1,60,11.856,0.03]
+        x2_Sn, y2_Sn, xerr2_Sn, yerr2_Sn = cortar_datos(corte2_Sn[0], corte2_Sn[1], x, y, x_err, y_err)
+        parametros2_Sn, errores2_Sn, _, _ = ajustar_gaussiana_recta_odr(x2_Sn, y2_Sn, xerr2_Sn, yerr2_Sn, p0_2_Sn, False)
+        #11.86(2) keV (Ll del Np)
+
+        corte3_Sn=[365,393]
+        p0_3_Sn=[0,1,650,13.959,0.03]
+        x3_Sn, y3_Sn, xerr3_Sn, yerr3_Sn = cortar_datos(corte3_Sn[0], corte3_Sn[1], x, y, x_err, y_err)
+        parametros3_Sn, errores3_Sn, _, _ = ajustar_gaussiana_recta_odr(x3_Sn, y3_Sn, xerr3_Sn, yerr3_Sn, p0_3_Sn, False)
+        #13.92(2) keV (La1 del Np)
+
+        corte4_Sn=[448,498]
+        p0_4_Sn=[0,1,125,16.910,0.1,350,17.744,0.1]
+        x4_Sn, y4_Sn, xerr4_Sn, yerr4_Sn = cortar_datos(corte4_Sn[0], corte4_Sn[1], x, y, x_err, y_err)
+        parametros4_Sn, errores4_Sn, _, _ = ajustar_gaussiana_doble_recta_odr(x4_Sn, y4_Sn, xerr4_Sn, yerr4_Sn, p0_4_Sn, False)
+        #16.94(1) keV y 17.75(3) keV (Lb4 del Np y Lb1 del Np)
+
+        corte5_Sn=[551,614]
+        p0_5_Sn=[0,1,60,20.768,0.1,20,21.430,0.1,30,22.133,0.1]
+        x5_Sn, y5_Sn, xerr5_Sn, yerr5_Sn = cortar_datos(corte5_Sn[0], corte5_Sn[1], x, y, x_err, y_err)
+        parametros5_Sn, errores5_Sn, _, _ = ajustar_gaussiana_triple_recta_odr(x5_Sn, y5_Sn, xerr5_Sn, yerr5_Sn, p0_5_Sn, False)
+        #20.79(1) keV, 21.43(2) keV y 22.11(2) keV (Lg1 y Lg3 del Np, y Ka1 del Ag)
+
+        corte6_Sn=[703,729]
+        p0_6_Sn=[0,1,30,26.338,0.03]
+        x6_Sn, y6_Sn, xerr6_Sn, yerr6_Sn = cortar_datos(corte6_Sn[0], corte6_Sn[1], x, y, x_err, y_err)
+        parametros6_Sn, errores6_Sn, _, _ = ajustar_gaussiana_recta_odr(x6_Sn, y6_Sn, xerr6_Sn, yerr6_Sn, p0_6_Sn, False)
+        #26.33(3) keV (Ka1 del Sb)
+
+        #Muestra de Sn, con impurezas de Ni, Ag y Sb, y con filtraciones de rayos del Np
+        
 
     elif j==13:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
@@ -1186,6 +1267,8 @@ for j,i in enumerate(archivos) :
         parametrosLg_W, erroresLg_W, _, _ = ajustar_gaussiana_recta_odr(xLg_W, yLg_W, xerrLg_W, yerrLg_W, p0_Lg_W, False)
         #11.28(2) keV (Lg1 del W)
 
+        #Muestra de W
+
     elif j==14:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
@@ -1201,6 +1284,20 @@ for j,i in enumerate(archivos) :
         xKb_Zn, yKb_Zn, xerrKb_Zn, yerrKb_Zn = cortar_datos(corteKb_Zn[0], corteKb_Zn[1], x, y, x_err, y_err)
         parametrosKb_Zn, erroresKb_Zn, _, _ = ajustar_gaussiana_recta_odr(xKb_Zn, yKb_Zn, xerrKb_Zn, yerrKb_Zn, p0_Kb_Zn, False)
         #9.53(1) keV (Kb1 del Zn)
+
+        corte1_Zn=[193, 212]
+        p0_1_Zn=[0,1,125,7.416,0.1]
+        x1_Zn, y1_Zn, xerr1_Zn, yerr1_Zn = cortar_datos(corte1_Zn[0], corte1_Zn[1], x, y, x_err, y_err)
+        parametros1_Zn, errores1_Zn, _, _ = ajustar_gaussiana_recta_odr(x1_Zn, y1_Zn, xerr1_Zn, yerr1_Zn, p0_1_Zn, False)
+        #7.41(1) keV (Ka1 del Ni)
+
+        corte2_Zn=[589, 615]
+        p0_2_Zn=[0,1,60,22.130,0.1]
+        x2_Zn, y2_Zn, xerr2_Zn, yerr2_Zn = cortar_datos(corte2_Zn[0], corte2_Zn[1], x, y, x_err, y_err)
+        parametros2_Zn, errores2_Zn, _, _ = ajustar_gaussiana_recta_odr(x2_Zn, y2_Zn, xerr2_Zn, yerr2_Zn, p0_2_Zn, False)
+        #22.13(1) keV (Ka1 del Ag)
+
+        #Muestra de Zn, impurezas de Ni y Ag
 
     elif j==15:
         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
@@ -1218,117 +1315,23 @@ for j,i in enumerate(archivos) :
         parametrosKb_Zr, erroresKb_Zr, _, _ = ajustar_gaussiana_recta_odr(xKb_Zr, yKb_Zr, xerrKb_Zr, yerrKb_Zr, p0_Kb_Zr, False)
         #17.70(1) keV (Kb1 del Zr)
 
-def leer_datos_espectros(ruta_archivo):
-    df = pd.read_csv(ruta_archivo, sep='\t', engine='python')
-    encabezado = df.iloc[1].tolist()
-    df = df[2:].reset_index(drop=True)
-    df.columns = ['Elemento'] + encabezado[1:]
-    for col in df.columns[1:]:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    df = df.dropna(how='all', subset=df.columns[1:])
-    return df
+        corte1_Zr=[188, 232]
+        p0_1_Zr=[0,1,200,7.385,0.1,50,8.192,0.1]
+        x1_Zr, y1_Zr, xerr1_Zr, yerr1_Zr = cortar_datos(corte1_Zr[0], corte1_Zr[1], x, y, x_err, y_err)
+        parametros1_Zr, errores1_Zr, _, _ = ajustar_gaussiana_doble_recta_odr(x1_Zr, y1_Zr, xerr1_Zr, yerr1_Zr, p0_1_Zr, False)
+        #7.40(1) keV y 8.17(1) (Ka1 y Kb1 del Ni)
 
-df_datos = leer_datos_espectros('Experimento VI/Datos/Datos tpVI - Hoja 1.tsv')
+        corte2_Zr=[590, 620]
+        p0_2_Zr=[0,1,90,22.128,0.1]
+        x2_Zr, y2_Zr, xerr2_Zr, yerr2_Zr = cortar_datos(corte2_Zr[0], corte2_Zr[1], x, y, x_err, y_err)
+        parametros2_Zr, errores2_Zr, _, _ = ajustar_gaussiana_recta_odr(x2_Zr, y2_Zr, xerr2_Zr, yerr2_Zr, p0_2_Zr, False)
+        #22.10(2) keV (Ka1 del Ag)
 
-y_Z = df_datos['Z'].values
-x_Ka = np.sqrt(df_datos['Ka'].values)
-x_Kb = np.sqrt(df_datos['Kb'].values)
-x_La = np.sqrt(df_datos['La'].values)
-x_Lb = np.sqrt(df_datos['Lb'].values)
+        corte3_Zr=[665, 727]
+        p0_3_Zr=[0,1,20,24.955,0.1,30,26.326,0.1]
+        x3_Zr, y3_Zr, xerr3_Zr, yerr3_Zr = cortar_datos(corte3_Zr[0], corte3_Zr[1], x, y, x_err, y_err)
+        parametros3_Zr, errores3_Zr, _, _ = ajustar_gaussiana_doble_recta_odr(x3_Zr, y3_Zr, xerr3_Zr, yerr3_Zr, p0_3_Zr, False)
+        #25.02(3) keV y 26.34(2) (Kb1 del Ag y Ka1 del Sb)
 
-yerr_Z = np.full(len(y_Z), 0.1)
-xerr_Ka =df_datos['errKa'].values / (2 * x_Ka)
-xerr_Kb =df_datos['errKb'].values / (2 * x_Kb)
-xerr_La =df_datos['errLa'].values / (2 * x_La)
-xerr_Lb =df_datos['errLb'].values / (2 * x_Lb)
- 
-
-def limpiar_datos(x, y, xerr, yerr):
-    mask = np.isfinite(x) & np.isfinite(y) & np.isfinite(xerr) & np.isfinite(yerr)
-    return x[mask], y[mask], xerr[mask], yerr[mask]
-
-x_Ka, y_Ka, xerr_Ka, yerr_Ka = limpiar_datos(x_Ka, y_Z, xerr_Ka, yerr_Z)
-x_Kb, y_Kb, xerr_Kb, yerr_Kb = limpiar_datos(x_Kb, y_Z, xerr_Kb, yerr_Z)
-x_La, y_La, xerr_La, yerr_La = limpiar_datos(x_La, y_Z, xerr_La, yerr_Z)
-x_Lb, y_Lb, xerr_Lb, yerr_Lb = limpiar_datos(x_Lb, y_Z, xerr_Lb, yerr_Z)
-
-#graficar(x_Ka, y_Z, "√Ka (keV^0.5)", "Número atómico Z")
-fit_lineal(x_Ka, y_Ka, xerr_Ka, yerr_Ka, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas Ka")
-fit_lineal(x_Kb, y_Kb, xerr_Kb, yerr_Kb, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas Kb")
-fit_lineal(x_La, y_La, xerr_La, yerr_La, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas La")
-fit_lineal(x_Lb, y_Lb, xerr_Lb, yerr_Lb, False, "√E (keV^0.5)", "Número atómico Z", titulo = "Ajuste de la ley de Moseley para líneas Lb")
-
-# plt.figure(figsize=(8,5))
-
-# # Conjunto 1
-# plt.errorbar(x_Ka, y_Ka, xerr=xerr_Ka, yerr=yerr_Ka, fmt='o', label='Ka', capsize=3)
-# plt.plot(x_Ka, np.poly1d(np.polyfit(x_Ka, y_Ka, 1))(x_Ka), '-', color='C0')
-
-# # Conjunto 2
-# plt.errorbar(x_Kb, y_Kb, xerr=xerr_Kb, yerr=yerr_Kb, fmt='o', label='Kb', capsize=3)
-# plt.plot(x_Kb, np.poly1d(np.polyfit(x_Kb, y_Kb, 1))(x_Kb), '-', color='C1')
-
-# # Conjunto 3
-# plt.errorbar(x_La, y_La, xerr=xerr_La, yerr=yerr_La, fmt='o', label='La', capsize=3)
-# plt.plot(x_La, np.poly1d(np.polyfit(x_La, y_La, 1))(x_La), '-', color='C2')
-
-# # Conjunto 4
-# plt.errorbar(x_Lb, y_Lb, xerr=xerr_Lb, yerr=yerr_Lb, fmt='o', label='Lb', capsize=3)
-# plt.plot(x_Lb, np.poly1d(np.polyfit(x_Lb, y_Lb, 1))(x_Lb), '-', color='C3')
-
-# plt.xlabel('√E (√keV)')
-# plt.ylabel('Número atómico Z')
-# plt.title('Verificación de la Ley De Moseley')
-# plt.grid(alpha=0.3)
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
-
-
-# C = 21.4896626848081 
-
-# def f_lineal_C(beta, x):
-#     m, b = beta
-#     return m * x * C + b
-
-# # Asumiendo que ya tenés definidos x_Ka, y_Ka, xerr_Ka, yerr_Ka
-# modelo = Model(f_lineal_C)
-# data = RealData(x_Ka, y_Ka, sx=xerr_Ka, sy=yerr_Ka)
-# betai = [2.0, 0.0]
-
-# odr = ODR(data, modelo, beta0=betai)
-# out = odr.run()
-
-# m, b = out.beta
-# sm, sb = out.sd_beta
-
-# y_pred_Ka = f_lineal_C(out.beta, x_Ka)
-# ss_res = np.sum((y_Ka - y_pred_Ka) ** 2)
-# ss_tot = np.sum((y_Ka - np.mean(y_Ka)) ** 2)
-# r2 = 1 - ss_res / ss_tot
-
-# # ==== Gráfico ====
-# plt.figure(figsize=(10,6))
-# plt.errorbar(x_Ka, y_Ka, xerr=xerr_Ka, yerr=yerr_Ka, 
-#              fmt='o', alpha=0.6, label='Datos Ka', 
-#              color='orange', capsize=3)
-
-# x_fit = np.linspace(np.min(x_Ka), np.max(x_Ka), 500)
-# y_fit = f_lineal_C(out.beta, x_fit)
-
-# plt.plot(x_fit, y_fit, 'r-', linewidth=2, 
-#          label=(f'Ajuste ODR\n'
-#                 f'm={m:.2f}±{sm:.2f}\n'
-#                 f'b={b:.2f}±{sb:.2f}\n'
-#                 f'R²={r2:.4f}'))
-
-# plt.xlabel("√E (keV^0.5)")
-# plt.ylabel("Número atómico Z")
-# plt.title("Ajuste ODR – Línea Ka")
-# plt.legend()
-# plt.grid(True, alpha=0.3)
-# plt.show()
-
-
-
+        #Muestra de Zr, con impurezas de Ni, Ag y Sb
 

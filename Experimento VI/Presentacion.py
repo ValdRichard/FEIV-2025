@@ -65,11 +65,6 @@ plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-
-
-
-
-
 archivos = ["Ag.spe","Co.spe","Cr.spe","Cu.spe","Fe.spe","Mn.spe","Mo.spe","Nb.spe","Pb.spe","Pd.spe","Ru.spe","Se.spe","Sn.spe","W.spe","Zn.spe","Zr.spe"]
 titulos = ["Ag","Co","Cr","Cu","Fe","Mn","Mo","Nb","Pb","Pd","Ru","Se","Sn","W","Zn","Zr"]
 for j,i in enumerate(archivos) : 

@@ -944,7 +944,7 @@ mostrarGraficaFinal=True,
 ruta = "./Experimento V/Datos/"
 
 df_Co_malos = espectro( ruta, 'Co60-18-9.Spe')
-
+graficar( df_Co_malos["Canal"], df_Co_malos["Cuentas"], "hola", "prueba")
 df_Cs_malos = espectro( ruta, 'Cs137-18-9-1800s.Spe')
 
 df_Na_malos = espectro( ruta, 'Na22-18-9-1800s.Spe')

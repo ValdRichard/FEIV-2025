@@ -1017,7 +1017,7 @@ for j,i in enumerate(archivos) :
 
 
     elif j==8:
-        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
 
         corteLa_Pb=[273, 299]

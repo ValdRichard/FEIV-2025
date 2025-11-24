@@ -205,7 +205,6 @@ def graficar_series_odr(df):
         plt.tight_layout()
         plt.show()
 
-
 df_datos = leer_datos_espectros('Experimento VI/Datos/Datos tpVI - Hoja 3.csv')
 df_datos_eV = convertir_energias_a_eV(df_datos)
 #graficar_series_odr(df_datos_eV)
@@ -312,7 +311,7 @@ c = 299792458         # m/s
 series = ["Ka", "Kb", "La", "Lb", "Lg", "Ll"]
 
 delta = {
-    "Ka": 0.75,
+    "Ka": 3/4,
     "Kb": 8/9,
     "La": 5/36,
     "Lb": 3/16,

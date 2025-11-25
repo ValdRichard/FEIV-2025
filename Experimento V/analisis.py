@@ -1128,7 +1128,16 @@ df_Co = df_Co_malos[:900]
 df_Cs = df_Cs_malos[:495]
 
 df_Na_malos = df_Na_malos.drop(659)
-df_Na = df_Na_malos[:812]
+df_Na_malos = df_Na_malos.drop(813)
+df_Na_malos = df_Na_malos.drop(823)
+df_Na_malos = df_Na_malos.drop(825)
+df_Na_malos = df_Na_malos.drop(829)
+df_Na_malos = df_Na_malos.drop(832)
+df_Na_malos = df_Na_malos.drop(838)
+
+graficar( df_Na_malos["Canal"], df_Na_malos["Cuentas"], "hola", "prueba")
+
+df_Na = df_Na_malos[:839]
 
 df_Ba = df_Ba_malos[:295]
 

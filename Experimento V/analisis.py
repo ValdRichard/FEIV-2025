@@ -882,6 +882,178 @@ def ajustar_gaussiana_cuadruple_odr(x_data, y_data,
     
     return parametros, errores, output, gaussiana_ajustada
 
+def graficar_ajuste_completo(
+    x, y, parametros, funcion,
+    titulo="Ajuste completo",
+    carpeta="AjustesCompletos",
+    x_err=None, y_err=None
+):
+    """
+    Grafica:
+      - puntos experimentales (naranja) con errores
+      - ajuste total (rojo)
+      - componentes individuales según la función modelo
+    """
+
+    import os
+    os.makedirs(carpeta, exist_ok=True)
+
+    nombre = funcion.__name__.lower()
+
+    # ---------- TITULO AUTOMATICO ----------
+    titulo_completo = f"{titulo} — modelo: {funcion.__name__}"
+
+    # Preparar curva suave
+    x_fit = np.linspace(np.min(x), np.max(x), 2000)
+    y_fit_total = funcion(parametros, x_fit)
+
+    plt.figure(figsize=(10, 6))
+
+    # =====================================================
+    # 1) DATOS EXPERIMENTALES — naranja + errores
+    # =====================================================
+
+    if x_err is None:
+        x_err_plot = None
+    else:
+        x_err_plot = x_err
+
+    if y_err is None:
+        y_err_plot = None
+    else:
+        y_err_plot = y_err
+
+    plt.errorbar(
+        x, y,
+        xerr=x_err_plot,
+        yerr=y_err_plot,
+        fmt='o',
+        color='#ff7f0e',
+        markersize=6,
+        ecolor='gray',
+        elinewidth=0.8,
+        capsize=2,
+        alpha=0.9,
+        label="Datos experimentales"
+    )
+
+    # =====================================================
+    # 2) AJUSTE TOTAL — rojo
+    # =====================================================
+    plt.plot(
+        x_fit, y_fit_total,
+        color='red',
+        linewidth=2.2,
+        label="Ajuste total"
+    )
+
+    # =====================================================
+    # 3) COMPONENTES SEGÚN FUNCIÓN DETECTADA
+    # =====================================================
+
+    # ---------------- GAUSSIANA SIMPLE ----------------
+    if "gaussiana" in nombre and "doble" not in nombre:
+        A, mu, sigma, m, b = parametros
+        gauss = A * np.exp(-(x_fit - mu)**2 / (2*sigma**2))
+        recta = m * x_fit + b
+
+        plt.plot(x_fit, gauss, '--', color='green', label="Gaussiana")
+        plt.plot(x_fit, recta, '--', color='purple', label="Recta fondo")
+
+    # ---------------- GAUSSIANA DOBLE ----------------
+    elif "gaussiana" in nombre and "doble" in nombre:
+        A1, mu1, s1, m, b, A2, mu2, s2 = parametros
+
+        g1 = A1 * np.exp(-(x_fit - mu1)**2 / (2*s1**2))
+        g2 = A2 * np.exp(-(x_fit - mu2)**2 / (2*s2**2))
+        recta = m * x_fit + b
+
+        plt.plot(x_fit, g1, '--', color='green',  label="Gaussiana 1")
+        plt.plot(x_fit, g2, '--', color='lime',   label="Gaussiana 2")
+        plt.plot(x_fit, recta, '--', color='purple', label="Recta fondo")
+
+    # ----------- BORDE COMPTON SIMPLE -------------
+    elif "borde_compton_gauss_recta" not in nombre \
+         and "borde_compton_con_recta" not in nombre \
+         and "borde_compton" in nombre:
+
+        A, xc, s, y0 = parametros
+        z = (x_fit - xc) / (np.sqrt(2)*s)
+        borde = A*(1 - erf(z))
+
+        plt.plot(x_fit, borde, '--', color='green', label="Compton")
+        plt.plot(x_fit, np.full_like(x_fit, y0), '--', color='purple', label="Offset")
+
+    # ----------- BORDE COMPTON + RECTA -------------
+    elif "borde_compton_con_recta" in nombre:
+        A, xc, s, m, b = parametros
+        z = (x_fit - xc) / (np.sqrt(2)*s)
+        borde = A*(1 - erf(z))
+        recta = m*x_fit + b
+
+        plt.plot(x_fit, borde, '--', color='green', label="Compton")
+        plt.plot(x_fit, recta, '--', color='purple', label="Recta")
+
+    # ---- COMPTON + GAUSS + OFFSET ----
+    elif "borde_compton_gauss_recta" in nombre:
+        A, xc, s, Ag, mug, sg, y0 = parametros
+
+        z = (x_fit - xc) / (np.sqrt(2)*s)
+        borde = A*(1 - erf(z))
+        gauss = Ag*np.exp(-(x_fit - mug)**2 / (2*sg**2))
+
+        plt.plot(x_fit, borde, '--', color='green', label="Compton")
+        plt.plot(x_fit, gauss, '--', color='lime', label="Gauss")
+        plt.plot(x_fit, np.full_like(x_fit, y0), '--', color='purple', label="Offset")
+
+    # ----------- MODELO CO-BA ----------------
+    elif "co_ba" in nombre:
+        A1, xc1, s1, A2, xc2, s2, y0, Ag1, mg1, sg1, Ag2, mg2, sg2 = parametros
+
+        c1 = A1*(1 - erf((x_fit-xc1)/(np.sqrt(2)*s1)))
+        c2 = A2*(1 - erf((x_fit-xc2)/(np.sqrt(2)*s2)))
+        g1 = Ag1*np.exp(-(x_fit-mg1)**2 / (2*sg1**2))
+        g2 = Ag2*np.exp(-(x_fit-mg2)**2 / (2*sg2**2))
+
+        plt.plot(x_fit, c1, '--', color='green', label="Compton 1")
+        plt.plot(x_fit, c2, '--', color='lime', label="Compton 2")
+        plt.plot(x_fit, g1, '--', color='purple', label="Gauss 1")
+        plt.plot(x_fit, g2, '--', color='violet', label="Gauss 2")
+
+    # ----------- MODELO BA (completo) ------------
+    elif nombre.endswith("funcion_ba") or nombre == "funcion_ba":
+        A1, xc1, s1, A2, xc2, s2, m, b, Ag1, mg1, sg1, Ag2, mg2, sg2 = parametros
+
+        c1 = A1*(1 - erf((x_fit-xc1)/(np.sqrt(2)*s1)))
+        c2 = A2*(1 - erf((x_fit-xc2)/(np.sqrt(2)*s2)))
+        g1 = Ag1*np.exp(-(x_fit-mg1)**2 / (2*sg1**2))
+        g2 = Ag2*np.exp(-(x_fit-mg2)**2 / (2*sg2**2))
+        recta = m*x_fit + b
+
+        plt.plot(x_fit, c1, '--', color='green',  label="Compton 1")
+        plt.plot(x_fit, c2, '--', color='lime',   label="Compton 2")
+        plt.plot(x_fit, g1, '--', color='purple', label="Gauss 1")
+        plt.plot(x_fit, g2, '--', color='violet', label="Gauss 2")
+        plt.plot(x_fit, recta, '--', color='gray', label="Recta fondo")
+
+    else:
+        raise ValueError(f"Función no reconocida en graficar_ajuste_completo(): {funcion.__name__}")
+
+    # =====================================================
+    # ESTÉTICA FINAL
+    # =====================================================
+
+    plt.grid(alpha=0.3)
+    plt.xlabel("Energía [keV]" if x.max() > 200 else "Canal")
+    plt.ylabel("Cuentas")
+    plt.title(titulo_completo)
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(f"{carpeta}/{titulo_completo}.png", dpi=300)
+    plt.show()
+
+
 def calibrar(canal, sigma_canal, m, b, sm, sb):
     
     canal = np.array(canal, dtype=float)
@@ -938,7 +1110,7 @@ def ajustar_pico_gaussiano_CUADRUPLE(x_data, y_data, x_err, y_err, p0, mostrarGr
 
 
 mostrarGrafica=False,
-mostrarGraficaFinal=True,
+mostrarGraficaFinal=False,
 
 
 ruta = "./Experimento V/Datos/"
@@ -1103,7 +1275,7 @@ E_p0_Compton_Co=[77, 954.94, 26.84, 300, 1101, 8, 2, 703.30, 1158.63, 41.73, 609
 nombre_archivoCompton_Co = "ComptonCo"
 
 E_Compton_Co, Cuentas_Compton_Co, errE_Compton_Co, errCuentas_Compton_Co = cortar_datos(E_corte_Compton_Co[0], E_corte_Compton_Co[1], E_Co, y_Co, errE_Co, y_Co_err)
-parametros_Compton_Co, errores_Compton_Co, _, _ = ajustar_co_ba(E_Compton_Co, Cuentas_Compton_Co, errE_Compton_Co, errCuentas_Compton_Co, E_p0_Compton_Co, True, nombre_archivoCompton_Co)
+parametros_Compton_Co, errores_Compton_Co, _, _ = ajustar_co_ba(E_Compton_Co, Cuentas_Compton_Co, errE_Compton_Co, errCuentas_Compton_Co, E_p0_Compton_Co, False, nombre_archivoCompton_Co)
 
 #CESIO -------------------------------------------------
 
@@ -1113,7 +1285,7 @@ E_p0_Compton_Cs=[913, 480, 25, 447]
 nombre_archivoCompton_Cs = "ComptonCs"
 
 E_Compton_Cs, Cuentas_Compton_Cs, errE_Compton_Cs, errCuentas_Compton_Cs = cortar_datos(E_corte_Compton_Cs[0], E_corte_Compton_Cs[1], E_Cs, y_Cs, errE_Cs, y_Cs_err)
-parametros_Compton_Cs, errores_Compton_Cs, _, _ = ajustar_borde_compton(E_Compton_Cs, Cuentas_Compton_Cs, errE_Compton_Cs, errCuentas_Compton_Cs, E_p0_Compton_Cs, True, nombre_archivoCompton_Cs)
+parametros_Compton_Cs, errores_Compton_Cs, _, _ = ajustar_borde_compton(E_Compton_Cs, Cuentas_Compton_Cs, errE_Compton_Cs, errCuentas_Compton_Cs, E_p0_Compton_Cs, False, nombre_archivoCompton_Cs)
 
 # --- Ajuste del fotopico ---
 E_corte_Cs=[310, 490]
@@ -1130,7 +1302,7 @@ E_p01_Compton_Na=[613, 300, 50, -1, 1]
 nombre_archivoCompton1_Na = "ComptonNa1"
 
 E_Compton1_Na, Cuentas_Compton1_Na, errE_Compton1_Na, errCuentas_Compton1_Na = cortar_datos(E_corte1_Compton_Na[0], E_corte1_Compton_Na[1], E_Na, y_Na, errE_Na, y_Na_err)
-parametros_Compton1_Na, errores_Compton1_Na, _, _ = ajustar_borde_compton_con_recta(E_Compton1_Na, Cuentas_Compton1_Na, errE_Compton1_Na, errCuentas_Compton1_Na, E_p01_Compton_Na, True, nombre_archivoCompton1_Na)
+parametros_Compton1_Na, errores_Compton1_Na, _, _ = ajustar_borde_compton_con_recta(E_Compton1_Na, Cuentas_Compton1_Na, errE_Compton1_Na, errCuentas_Compton1_Na, E_p01_Compton_Na, False, nombre_archivoCompton1_Na)
 
 # --- Ajuste del fotopico respectivo---
 E_corte1_Na=[210, 490]
@@ -1145,7 +1317,7 @@ E_p02_Compton_Na=[100, 1050, 50, 176, 1274, 50, 1] #E_p02_Compton_Na=[100, 1050,
 nombre_archivoCompton2_Na = "ComptonNa2"
 
 E_Compton2_Na, Cuentas_Compton2_Na, errE_Compton2_Na, errCuentas_Compton2_Na = cortar_datos(E_corte2_Compton_Na[0], E_corte2_Compton_Na[1], E_Na, y_Na, errE_Na, y_Na_err)
-parametros_Compton2_Na, errores_Compton2_Na, _, _ = ajustar_borde_compton_gauss_recta(E_Compton2_Na, Cuentas_Compton2_Na, errE_Compton2_Na, errCuentas_Compton2_Na, E_p02_Compton_Na, True, nombre_archivoCompton2_Na)
+parametros_Compton2_Na, errores_Compton2_Na, _, _ = ajustar_borde_compton_gauss_recta(E_Compton2_Na, Cuentas_Compton2_Na, errE_Compton2_Na, errCuentas_Compton2_Na, E_p02_Compton_Na, False, nombre_archivoCompton2_Na)
 
 #BARIO -------------------------------------------------
 
@@ -1155,7 +1327,7 @@ E_p01_Compton_Ba=[3000, 302.9, 19, -1, 1, 10000, 361, 23]
 nombre_archivoCompton1_Ba = "ComptonBa1"
 
 E_Compton1_Ba, Cuentas_Compton1_Ba, errE_Compton1_Ba, errCuentas_Compton1_Ba = cortar_datos(E_corte1_Compton_Ba[0], E_corte1_Compton_Ba[1], E_Ba, y_Ba, errE_Ba, y_Ba_err)
-parametros_Compton1_Ba, errores_Compton1_Ba, _, _ = ajustar_pico_gaussiano_doble(E_Compton1_Ba, Cuentas_Compton1_Ba, errE_Compton1_Ba, errCuentas_Compton1_Ba, E_p01_Compton_Ba, True, nombre_archivoCompton1_Ba)
+parametros_Compton1_Ba, errores_Compton1_Ba, _, _ = ajustar_pico_gaussiano_doble(E_Compton1_Ba, Cuentas_Compton1_Ba, errE_Compton1_Ba, errCuentas_Compton1_Ba, E_p01_Compton_Ba, False, nombre_archivoCompton1_Ba)
 
 # --- Ajuste del segundo borde compton ---
 E_corte2_Compton_Ba=[90, 270] 
@@ -1163,110 +1335,197 @@ E_p02_Compton_Ba=[300,161.717, 2, 500, 213.079, 1, -1, 1, 3658.22, 299.62, 18.66
 nombre_archivoCompton2_Ba = "ComptonBa2"
 
 E_Compton2_Ba, Cuentas_Compton2_Ba, errE_Compton2_Ba, errCuentas_Compton2_Ba = cortar_datos(E_corte2_Compton_Ba[0], E_corte2_Compton_Ba[1], E_Ba, y_Ba, errE_Ba, y_Ba_err)
-parametros_Compton2_Ba, errores_Compton2_Ba, _, _ = ajustar_ba(E_Compton2_Ba, Cuentas_Compton2_Ba, errE_Compton2_Ba, errCuentas_Compton2_Ba, E_p02_Compton_Ba, True, nombre_archivoCompton2_Ba)
+parametros_Compton2_Ba, errores_Compton2_Ba, _, _ = ajustar_ba(E_Compton2_Ba, Cuentas_Compton2_Ba, errE_Compton2_Ba, errCuentas_Compton2_Ba, E_p02_Compton_Ba, False, nombre_archivoCompton2_Ba)
+# ===========================================================
+# =============== AJUSTES LINEALES (COMPLETOS) ==============
+# ===========================================================
+
+# ===========================================================
+# =============== AJUSTES LINEALES (COMPLETOS) ==============
+# ===========================================================
+
+# --- CO60 (lineal) ---
+graficar_ajuste_completo(
+    x1_Co, y1_Co,
+    parametros1_Co,
+    funcion_gaussiana_doble,
+    titulo="Co60_lineal_fotopicos_completo",
+    x_err=xerr1_Co,
+    y_err=yerr1_Co
+)
+
+# --- Cs137 fotopico 1 ---
+graficar_ajuste_completo(
+    x1_Cs, y1_Cs,
+    parametros1_Cs,
+    funcion_gaussiana,
+    titulo="Cs137_lineal_fotopico1_completo",
+    x_err=xerr1_Cs,
+    y_err=yerr1_Cs
+)
+
+# --- Cs137 fotopico 2 ---
+graficar_ajuste_completo(
+    x2_Cs, y2_Cs,
+    parametros2_Cs,
+    funcion_gaussiana,
+    titulo="Cs137_lineal_fotopico2_completo",
+    x_err=xerr2_Cs,
+    y_err=yerr2_Cs
+)
+
+# --- Na22 fotopico 1 ---
+graficar_ajuste_completo(
+    x1_Na, y1_Na,
+    parametros1_Na,
+    funcion_gaussiana,
+    titulo="Na22_lineal_fotopico1_completo",
+    x_err=xerr1_Na,
+    y_err=yerr1_Na
+)
+
+# --- Na22 fotopico 2 ---
+graficar_ajuste_completo(
+    x2_Na, y2_Na,
+    parametros2_Na,
+    funcion_gaussiana,
+    titulo="Na22_lineal_fotopico2_completo",
+    x_err=xerr2_Na,
+    y_err=yerr2_Na
+)
+
+# --- Ba133 fotopico 1 ---
+graficar_ajuste_completo(
+    x1_Ba, y1_Ba,
+    parametros1_Ba,
+    funcion_gaussiana,
+    titulo="Ba133_lineal_fotopico1_completo",
+    x_err=xerr1_Ba,
+    y_err=yerr1_Ba
+)
+
+# --- Ba133 fotopico 2 ---
+graficar_ajuste_completo(
+    x2_Ba, y2_Ba,
+    parametros2_Ba,
+    funcion_gaussiana,
+    titulo="Ba133_lineal_fotopico2_completo",
+    x_err=xerr2_Ba,
+    y_err=yerr2_Ba
+)
+
+# --- Ba133 doble pico ---
+graficar_ajuste_completo(
+    x3_Ba, y3_Ba,
+    parametros3_Ba,
+    funcion_gaussiana_doble,
+    titulo="Ba133_lineal_fotopico_doble_completo",
+    x_err=xerr3_Ba,
+    y_err=yerr3_Ba
+)
 
 
-# def devolver_energia_cuentas(
-#     corte1=(13, 60),
-#     p0_1=[0, 30, 7, 4, 0],
-#     mostrarGrafica=True,
-#     corte2=(550, 820),
-#     p0_2=[0, 662, 7, 4, 0],
-#     mostrarGrafica=True,
-#     mostrarGraficaFinal=True,
-#     corteRetro = (70, 120),
-#     corteCompton = (70, 120),
-#     p0_Compton = [0, 320, 8, 2],
-#     mostrarGraficaRetro = True, 
-#     mostrarGraficaCompton = True, 
-#     nombre_archivoRetro = 'Retro',
-#     nombre_archivoCompton = 'Compton',
-#     ajustarPlomo=False,
-#     cortePlomo=(850, 1050),
-#     p0_Plomo=None,
-#     mostrarGraficaPlomo=True,
-#     nombre_archivoPlomo="Plomo"
-# ):
+# ===========================================================
+# ========= AJUSTES DEFINITIVOS EN ENERGÍA (COMPLETOS) ======
+# ===========================================================
+
+# ------------------------- CO60 -----------------------------
+
+# --- Fotopicos doble Gauss ---
+graficar_ajuste_completo(
+    E_x_Co, E_y_Co,
+    E_parametros_Co,
+    funcion_gaussiana_doble,
+    titulo="Co60_definitivo_fotopicos_completo",
+    x_err=E_xerr_Co,
+    y_err=E_yerr_Co
+)
+
+# --- Compton doble (función Co-Ba) ---
+graficar_ajuste_completo(
+    E_Compton_Co, Cuentas_Compton_Co,
+    parametros_Compton_Co,
+    funcion_Co_Ba,
+    titulo="Co60_definitivo_compton_doble_completo",
+    x_err=errE_Compton_Co,
+    y_err=errCuentas_Compton_Co
+)
 
 
-#     # --- Calibración ---
-#     canal = [parametros1[1], parametros2[1]]
-#     errCanal = [errores1[1], errores2[1]]
-#     # Esto está mal, porque no sirve un ajuste de dos valores, lo haré a mano
-#     # m, sm, b, sb = fit_lineal(canal, Energia, errCanal, errEnergia)
+# ------------------------- Cs137 -----------------------------
 
-    
-#     # print(canal[1] - canal[0])
-#     m =(662-32)/(canal[1] - canal[0])
-#     b = -m * canal[0] + 32
-#     sm = np.sqrt(errCanal[0]**2 + errCanal[1]**2) * ((662-32)/(canal[1] - canal[0])**2)
-#     sb = np.sqrt((m * errCanal[0])**2 + (sm * canal[0])**2)
-    
+# --- Borde Compton ---
+graficar_ajuste_completo(
+    E_Compton_Cs, Cuentas_Compton_Cs,
+    parametros_Compton_Cs,
+    funcion_borde_compton,
+    titulo="Cs137_definitivo_compton_completo",
+    x_err=errE_Compton_Cs,
+    y_err=errCuentas_Compton_Cs
+)
 
-#     errorX = np.full(len(df["Canal"][:800]), 1/2, dtype=float)
-#     Cuentas = df["Cuentas"][:800]
-#     errCuentas = np.sqrt(df["Cuentas"][:800])
-#     E, errE = calibrar(df["Canal"][:800], errorX, m, b, sm, sb)
-#     # print(f"Errores en E: {errE}")
-#     if mostrarGraficaFinal:
-#         graficar_con_error(E, Cuentas, errE, errCuentas, 'Energía [keV]', 'Cuentas')
-    
-#     E_retro, Cuentas_retro, errE_retro, errCuentas_retro = cortar_datos(
-#         *corteRetro, E, Cuentas, errE, errCuentas
-#     )
+# --- Fotopico ---
+graficar_ajuste_completo(
+    E_x_Cs, E_y_Cs,
+    E_parametros_Cs,
+    funcion_gaussiana,
+    titulo="Cs137_definitivo_fotopico_completo",
+    x_err=E_xerr_Cs,
+    y_err=E_yerr_Cs
+)
 
-#     # --- Estimaciones iniciales ---
-#     A0 = np.max(Cuentas_retro) - np.min(Cuentas_retro)
-#     mu0 = E_retro[np.argmax(Cuentas_retro)]
-#     sigma0 = 10  # ancho estimado (keV)
-#     m_lin0 = -2  # pendiente inicial negativa (fondo)
-#     b_lin0 = np.min(Cuentas_retro)
-#     p0_retro = [A0, mu0, sigma0, m_lin0, b_lin0]
 
-#     # --- Ajuste gaussiano + fondo lineal ---
-#     parametros_retro, errores_retro, _, _ = ajustar_pico_gaussiano(
-#         E_retro, Cuentas_retro, errE_retro, errCuentas_retro, p0_retro, mostrarGraficaRetro, nombre_archivoRetro
-#     )
+# ------------------------- Na22 -----------------------------
 
-#     E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton = cortar_datos(
-#         *corteCompton, E, Cuentas, errE, errCuentas
-#     )
-#     # --- Ajuste gaussiano + fondo lineal ---
-#     parametros_Compton, errores_Compton, _, _ = ajustar_borde_compton(
-#         E_Compton, Cuentas_Compton, errE_Compton, errCuentas_Compton, p0_Compton, mostrarGraficaCompton, nombre_archivoCompton
-#     )
-#     resultados_plomo = None
-#     if ajustarPlomo:
-#         E_Plomo, Cuentas_Plomo, errE_Plomo, errCuentas_Plomo = cortar_datos(
-#             *cortePlomo, E, Cuentas, errE, errCuentas
-#         )
+# --- Compton 1 (con recta) ---
+graficar_ajuste_completo(
+    E_Compton1_Na, Cuentas_Compton1_Na,
+    parametros_Compton1_Na,
+    funcion_borde_compton_con_recta,
+    titulo="Na22_definitivo_compton1_completo",
+    x_err=errE_Compton1_Na,
+    y_err=errCuentas_Compton1_Na
+)
 
-#         # Si no se proporcionan parámetros iniciales, estimamos automáticamente
-#         if p0_Plomo is None:
-#             A0 = np.max(Cuentas_Plomo) - np.min(Cuentas_Plomo)
-#             mu0 = E_Plomo[np.argmax(Cuentas_Plomo)]
-#             sigma0 = 10
-#             m_lin0 = -1
-#             b_lin0 = np.min(Cuentas_Plomo)
-#             p0_Plomo = [A0, mu0, sigma0, m_lin0, b_lin0]
+# --- Fotopico ---
+graficar_ajuste_completo(
+    E_x1_Na, E_y1_Na,
+    E_parametros_Na,
+    funcion_gaussiana,
+    titulo="Na22_definitivo_fotopico_completo",
+    x_err=E_xerr1_Na,
+    y_err=E_yerr1_Na
+)
 
-#         parametros_Plomo, errores_Plomo, _, _ = ajustar_pico_gaussiano(
-#             E_Plomo,
-#             Cuentas_Plomo,
-#             errE_Plomo,
-#             errCuentas_Plomo,
-#             p0_Plomo,
-#             mostrarGraficaPlomo,
-#             nombre_archivoPlomo,
-#         )
+# --- Compton 2 (compton + gauss + offset) ---
+graficar_ajuste_completo(
+    E_Compton2_Na, Cuentas_Compton2_Na,
+    parametros_Compton2_Na,
+    funcion_borde_compton_gauss_recta,
+    titulo="Na22_definitivo_compton2_completo",
+    x_err=errE_Compton2_Na,
+    y_err=errCuentas_Compton2_Na
+)
 
-#         resultados_plomo = {
-#             "parametros": parametros_Plomo,
-#             "errores": errores_Plomo,
-#         }
-#     # Retornamos resultados
-#     return E, errE, errCuentas, {
-#         "pico1": {"parametros": parametros1, "errores": errores1},
-#         "pico2": {"parametros": parametros2, "errores": errores2},
-#         "ajuste_lineal": {"m": m, "sm": sm, "b": b, "sb": sb},
-#     }
+
+# ------------------------- Ba133 -----------------------------
+
+# --- Compton 1 (doble gauss) ---
+graficar_ajuste_completo(
+    E_Compton1_Ba, Cuentas_Compton1_Ba,
+    parametros_Compton1_Ba,
+    funcion_gaussiana_doble,
+    titulo="Ba133_definitivo_compton1_completo",
+    x_err=errE_Compton1_Ba,
+    y_err=errCuentas_Compton1_Ba
+)
+
+# --- Compton 2 (función Ba completa) ---
+graficar_ajuste_completo(
+    E_Compton2_Ba, Cuentas_Compton2_Ba,
+    parametros_Compton2_Ba,
+    funcion_Ba,
+    titulo="Ba133_definitivo_compton2_completo",
+    x_err=errE_Compton2_Ba,
+    y_err=errCuentas_Compton2_Ba
+)

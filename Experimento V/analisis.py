@@ -1339,193 +1339,105 @@ parametros_Compton2_Ba, errores_Compton2_Ba, _, _ = ajustar_ba(E_Compton2_Ba, Cu
 # ===========================================================
 # =============== AJUSTES LINEALES (COMPLETOS) ==============
 # ===========================================================
+def graficar_espectro_anotado(
+    x, y, x_err, y_err,
+    lineas=None,      # [(xpos, "label"), ...]
+    titulo="Espectro",
+    xlabel="Canal",
+    ylabel="Cuentas",
+    nombre_archivo="espectro_anotado"
+):
+    """
+    Grafica un espectro completo con:
+      - puntos naranjas + barras de error
+      - líneas verticales en fotopicos
+      - etiquetas grandes y destacadas
+    """
+    plt.figure(figsize=(12,6))
 
-# ===========================================================
-# =============== AJUSTES LINEALES (COMPLETOS) ==============
-# ===========================================================
+    # ==== DATOS EXPERIMENTALES ====
+    plt.errorbar(
+        x, y,
+        xerr=x_err,
+        yerr=y_err,
+        fmt='o',
+        color='#ff7f0e',
+        markersize=4,
+        ecolor='gray',
+        elinewidth=0.8,
+        capsize=2,
+        alpha=0.8,
+        label="Datos experimentales"
+    )
 
-# --- CO60 (lineal) ---
-graficar_ajuste_completo(
-    x1_Co, y1_Co,
-    parametros1_Co,
-    funcion_gaussiana_doble,
-    titulo="Co60_lineal_fotopicos_completo",
-    x_err=xerr1_Co,
-    y_err=yerr1_Co
+    ymax = max(y)
+
+    # ==== LÍNEAS VERTICALES + LABELS GRANDES ====
+    if lineas:
+        for (xpos, texto) in lineas:
+            plt.axvline(xpos, color='black', linestyle='--', linewidth=1)
+
+            plt.text(
+                xpos + (max(x)-min(x))*0.005,   # pequeño desplazamiento a la derecha
+                ymax * 0.65,                    # altura de la etiqueta
+                texto,
+                rotation=90,
+                va='bottom',
+                ha='left',
+                fontsize=14,                    # ★ LABEL GRANDE
+                fontweight='bold',              # ★ EN NEGRITA
+                color='black'
+            )
+
+    # plt.title(titulo, fontsize=16)
+    plt.xlabel(xlabel, fontsize=14)
+    plt.ylabel(ylabel, fontsize=14)
+    plt.grid(alpha=0.3)
+    plt.legend(fontsize=12)
+
+    carpeta = "./Experimento V/Imagenes/EspectrosAnotados"
+    os.makedirs(carpeta, exist_ok=True)
+    plt.savefig(f"{carpeta}/{nombre_archivo}.png", dpi=300)
+
+    plt.show()
+graficar_espectro_anotado(
+    E_Co, y_Co, errE_Co, y_Co_err,
+    lineas=[
+        (m*parametros1_Co[1] + b, "1173.2 keV"),
+        (m*parametros1_Co[6] + b, "1332.5 keV")
+    ],
+    xlabel="Energía [keV]",
+    nombre_archivo="Co_anotado"
 )
 
-# --- Cs137 fotopico 1 ---
-graficar_ajuste_completo(
-    x1_Cs, y1_Cs,
-    parametros1_Cs,
-    funcion_gaussiana,
-    titulo="Cs137_lineal_fotopico1_completo",
-    x_err=xerr1_Cs,
-    y_err=yerr1_Cs
+graficar_espectro_anotado(
+    E_Cs, y_Cs, errE_Cs, y_Cs_err,
+    lineas=[
+        (m*parametros1_Cs[1] + b, "32 keV"),
+        (m*parametros2_Cs[1] + b, "661.66 keV"),
+    ],
+    xlabel="Energía [keV]",
+    nombre_archivo="Cs_anotado"
 )
 
-# --- Cs137 fotopico 2 ---
-graficar_ajuste_completo(
-    x2_Cs, y2_Cs,
-    parametros2_Cs,
-    funcion_gaussiana,
-    titulo="Cs137_lineal_fotopico2_completo",
-    x_err=xerr2_Cs,
-    y_err=yerr2_Cs
+graficar_espectro_anotado(
+    E_Na, y_Na, errE_Na, y_Na_err,
+    lineas=[
+        (m*parametros1_Na[1] + b, "511 keV"),
+        (m*parametros2_Na[1] + b, "1274.5 keV")
+    ],
+    xlabel="Energía [keV]",
+    nombre_archivo="Na_anotado"
 )
 
-# --- Na22 fotopico 1 ---
-graficar_ajuste_completo(
-    x1_Na, y1_Na,
-    parametros1_Na,
-    funcion_gaussiana,
-    titulo="Na22_lineal_fotopico1_completo",
-    x_err=xerr1_Na,
-    y_err=yerr1_Na
-)
-
-# --- Na22 fotopico 2 ---
-graficar_ajuste_completo(
-    x2_Na, y2_Na,
-    parametros2_Na,
-    funcion_gaussiana,
-    titulo="Na22_lineal_fotopico2_completo",
-    x_err=xerr2_Na,
-    y_err=yerr2_Na
-)
-
-# --- Ba133 fotopico 1 ---
-graficar_ajuste_completo(
-    x1_Ba, y1_Ba,
-    parametros1_Ba,
-    funcion_gaussiana,
-    titulo="Ba133_lineal_fotopico1_completo",
-    x_err=xerr1_Ba,
-    y_err=yerr1_Ba
-)
-
-# --- Ba133 fotopico 2 ---
-graficar_ajuste_completo(
-    x2_Ba, y2_Ba,
-    parametros2_Ba,
-    funcion_gaussiana,
-    titulo="Ba133_lineal_fotopico2_completo",
-    x_err=xerr2_Ba,
-    y_err=yerr2_Ba
-)
-
-# --- Ba133 doble pico ---
-graficar_ajuste_completo(
-    x3_Ba, y3_Ba,
-    parametros3_Ba,
-    funcion_gaussiana_doble,
-    titulo="Ba133_lineal_fotopico_doble_completo",
-    x_err=xerr3_Ba,
-    y_err=yerr3_Ba
-)
-
-
-# ===========================================================
-# ========= AJUSTES DEFINITIVOS EN ENERGÍA (COMPLETOS) ======
-# ===========================================================
-
-# ------------------------- CO60 -----------------------------
-
-# --- Fotopicos doble Gauss ---
-graficar_ajuste_completo(
-    E_x_Co, E_y_Co,
-    E_parametros_Co,
-    funcion_gaussiana_doble,
-    titulo="Co60_definitivo_fotopicos_completo",
-    x_err=E_xerr_Co,
-    y_err=E_yerr_Co
-)
-
-# --- Compton doble (función Co-Ba) ---
-graficar_ajuste_completo(
-    E_Compton_Co, Cuentas_Compton_Co,
-    parametros_Compton_Co,
-    funcion_Co_Ba,
-    titulo="Co60_definitivo_compton_doble_completo",
-    x_err=errE_Compton_Co,
-    y_err=errCuentas_Compton_Co
-)
-
-
-# ------------------------- Cs137 -----------------------------
-
-# --- Borde Compton ---
-graficar_ajuste_completo(
-    E_Compton_Cs, Cuentas_Compton_Cs,
-    parametros_Compton_Cs,
-    funcion_borde_compton,
-    titulo="Cs137_definitivo_compton_completo",
-    x_err=errE_Compton_Cs,
-    y_err=errCuentas_Compton_Cs
-)
-
-# --- Fotopico ---
-graficar_ajuste_completo(
-    E_x_Cs, E_y_Cs,
-    E_parametros_Cs,
-    funcion_gaussiana,
-    titulo="Cs137_definitivo_fotopico_completo",
-    x_err=E_xerr_Cs,
-    y_err=E_yerr_Cs
-)
-
-
-# ------------------------- Na22 -----------------------------
-
-# --- Compton 1 (con recta) ---
-graficar_ajuste_completo(
-    E_Compton1_Na, Cuentas_Compton1_Na,
-    parametros_Compton1_Na,
-    funcion_borde_compton_con_recta,
-    titulo="Na22_definitivo_compton1_completo",
-    x_err=errE_Compton1_Na,
-    y_err=errCuentas_Compton1_Na
-)
-
-# --- Fotopico ---
-graficar_ajuste_completo(
-    E_x1_Na, E_y1_Na,
-    E_parametros_Na,
-    funcion_gaussiana,
-    titulo="Na22_definitivo_fotopico_completo",
-    x_err=E_xerr1_Na,
-    y_err=E_yerr1_Na
-)
-
-# --- Compton 2 (compton + gauss + offset) ---
-graficar_ajuste_completo(
-    E_Compton2_Na, Cuentas_Compton2_Na,
-    parametros_Compton2_Na,
-    funcion_borde_compton_gauss_recta,
-    titulo="Na22_definitivo_compton2_completo",
-    x_err=errE_Compton2_Na,
-    y_err=errCuentas_Compton2_Na
-)
-
-
-# ------------------------- Ba133 -----------------------------
-
-# --- Compton 1 (doble gauss) ---
-graficar_ajuste_completo(
-    E_Compton1_Ba, Cuentas_Compton1_Ba,
-    parametros_Compton1_Ba,
-    funcion_gaussiana_doble,
-    titulo="Ba133_definitivo_compton1_completo",
-    x_err=errE_Compton1_Ba,
-    y_err=errCuentas_Compton1_Ba
-)
-
-# --- Compton 2 (función Ba completa) ---
-graficar_ajuste_completo(
-    E_Compton2_Ba, Cuentas_Compton2_Ba,
-    parametros_Compton2_Ba,
-    funcion_Ba,
-    titulo="Ba133_definitivo_compton2_completo",
-    x_err=errE_Compton2_Ba,
-    y_err=errCuentas_Compton2_Ba
+graficar_espectro_anotado(
+    E_Ba, y_Ba, errE_Ba, y_Ba_err,
+    lineas=[
+        (m*parametros1_Ba[1] + b, "30 keV"),
+        (m*parametros2_Ba[1] + b, "81 keV"),
+        (m*parametros3_Ba[1] + b, "302.85 keV (1)"),
+        (m*parametros3_Ba[6] + b, "356 keV (2)")
+    ],
+    xlabel="Energía [keV]",
+    nombre_archivo="Ba_anotado"
 )

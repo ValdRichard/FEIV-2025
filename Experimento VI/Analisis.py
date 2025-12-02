@@ -708,6 +708,7 @@ errE=[0.001,0.001,0.001,0.001,0.001,0.001,0.001]
 canal=[parametrosM_Am[1],parametrosM_Am[4],parametrosLl_Am[3],parametrosLa_Am[3],parametrosLb_Am[1],parametrosLb_Am[4],parametrosLg_Am[3]]
 errCanal=[erroresM_Am[1],erroresM_Am[4],erroresLl_Am[3],erroresLa_Am[3],erroresLb_Am[1],erroresLb_Am[4],erroresLg_Am[3]]
 
+
 m, sm, b, sb, r2 = fit_lineal(canal,E,errCanal,errE,False,"Canal","Energpia [keV]","Calibración Am-241")
 
 df_Am["Energía"] = df_Am["Canal"] * m + b

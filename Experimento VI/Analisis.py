@@ -715,6 +715,8 @@ df_Am["Energía"] = df_Am["Canal"] * m + b
 x_Am_calibrado = df_Am["Energía"]
 x_Am_calibrado_err = np.sqrt(x_Am_calibrado**2 * sm**2 + m**2 * x_Am_err**2 + sb**2 )
 
+print(m, sm, b, sb)
+
 #graficar_con_error(x_Am_calibrado, y_Am, x_Am_calibrado_err, y_Am_err, "Energía [keV]", "Cuentas")
 
 #Análisis
@@ -1018,7 +1020,7 @@ for j,i in enumerate(archivos) :
 
 
     elif j==8:
-        graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
         #graficar(x0,y,"Canales","Cuentas")
 
         corteLa_Pb=[273, 299]

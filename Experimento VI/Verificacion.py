@@ -225,21 +225,21 @@ def graficar_todas_las_series_juntas(df):
     }
 
     colores = {
-        "Ka": "black",
-        "Kb": "black",
-        "La": "black",
-        "Lb": "black",
-        "Lg": "black",
-        "Ll": "black"
+        "Ka": "purple",
+        "Kb": "purple",
+        "La": "red",
+        "Lb": "red",
+        "Lg": "red",
+        "Ll": "red"
     }
 
     color_lineas = {
-        "Ka": "blue",
-        "Kb": "purple",
-        "La": "orange",
-        "Lb": "yellow",
-        "Lg": "green",
-        "Ll": "red"      # Ejemplo
+        "Ka": "green",
+        "Kb": "green",
+        "La": "blue",
+        "Lb": "blue",
+        "Lg": "blue",
+        "Ll": "blue"      # Ejemplo
     }
 
     plt.figure(figsize=(8,6))

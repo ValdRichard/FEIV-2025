@@ -1024,6 +1024,9 @@ print(m, sm)
 #         #Espectro del Nb, con impurezas de Ni, Rb*, Ag y Sb, y filtraciones de rayos del Np
 
 
+    # elif j==8:
+    #     graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
+        #graficar(x0,y,"Canales","Cuentas")
 #     elif j==8:
 #         #graficar_con_error(x,y,x_err,y_err,"Energía [keV]","Cuentas",titulos[j])
 #         #graficar(x0,y,"Canales","Cuentas")
